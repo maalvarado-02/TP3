@@ -39,7 +39,6 @@ class Mesh:
             line_number = line_number + 1
 
             global_id = int(values[0]) - 1
-
             if global_id != i:
                 raise ValueError("Unexpected node numbering")
 

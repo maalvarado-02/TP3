@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<VTKFile type="UnstructuredGrid" version="0.1" byte_order="LittleEndian" compressor="vtkZLibDataCompressor">
+<!--This file was created by meshio v5.3.5-->
+<UnstructuredGrid>
+<Piece NumberOfPoints="9" NumberOfCells="4">
+<Points>
+<DataArray type="Float64" Name="Points" NumberOfComponents="3" format="binary">
+AQAAAACAAADYAAAAMwAAAA==eJxjYMAOjMHgsz0OaQcc4lDwwR6dP2smCLxEN88Bu3pMe86eAYE39ujiaHy4OACsXBIl
+</DataArray>
+</Points>
+<Cells>
+<DataArray type="Int64" Name="connectivity" format="binary">
+AQAAAACAAACAAAAAJgAAAA==eJxjYIAARijNAqWZ0cSZoDQrDnUwPjuUZkMTh+njQFMHAA1AAEE=
+</DataArray>
+<DataArray type="Int64" Name="offsets" format="binary">
+AQAAAACAAAAgAAAAEwAAAA==eJxjYYAADijNA6UFoDQAAqAAKQ==
+</DataArray>
+<DataArray type="Int64" Name="types" format="binary">
+AQAAAACAAAAgAAAADgAAAA==eJzjZIAAThw0AALwACU=
+</DataArray>
+</Cells>
+<PointData>
+<DataArray type="Float64" Name="displacement" NumberOfComponents="3" format="binary">
+AQAAAACAAADYAAAAcgAAAA==eJxjYMAOfJ4IFBZrvbRjiMkpkH5zaTdM/E3G446tP77YTWsQbdS+9ng3ur7Ot1sXfD92YB+M/wms/oldz/o9sz5d3wUX/ww15yaa+tJN2h/e69+x7gKLX4CLe68+M+Xa/Ud289HEv0PN2YwmDgDeU1Bg
+</DataArray>
+</PointData>
+<CellData>
+<DataArray type="Float64" Name="stress" NumberOfComponents="3" format="binary">
+AQAAAACAAABgAAAAXgAAAA==eJz7+/////oWO8cEfuGYsNpLe8NDe7Vn3/m79z9UPNrIZKqT3MO9YaGidayB72yZGRgYGoDiFyYtvDsjaNfeNaus1jE8fggXj+MXPv5o102g+CrDiw4v9gIAHzsuzw==
+</DataArray>
+</CellData>
+</Piece>
+</UnstructuredGrid>
+</VTKFile>
