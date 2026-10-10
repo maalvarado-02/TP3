@@ -3,7 +3,7 @@ import numpy
 from source.elements.shape_functions import reference_element
 
 # Tipos habilitados por ahora. Al agregar un elemento, sumarlo aca.
-SUPPORTED = ("QUAD4",)
+SUPPORTED = ("TRI3", "TRI6", "QUAD4", "QUAD8")
 
 
 class Solid2D: 
