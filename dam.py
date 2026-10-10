@@ -35,7 +35,7 @@ mesh.dofs_per_node = Solid2D.dofs_per_node
 
 elements = []
 for e in range(mesh.number_of_elements()):
-     element = Solid2D(
+    element = Solid2D(
         mesh.element_global_ids[e],
         mesh.connectivity[e],
         mesh,
