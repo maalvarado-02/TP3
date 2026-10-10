@@ -23,7 +23,7 @@ for name in REFERENCE_ELEMENTS:
 
 # ETAPA 2: material con matriz constitutiva D
 # ---------------------------------------------------------------
-material = LinearElastic(E=21.0e9, 0.2, rho=2400.0)
+material = LinearElastic(E=21.0e9, nu=0.2, rho=2400.0)
 print(material.D_plane_stress())
 
 
