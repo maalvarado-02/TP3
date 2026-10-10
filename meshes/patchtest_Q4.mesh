@@ -1,5 +1,14 @@
-# Patch test Q4: 4 elementos, 9 nodos, todos los nodos (incluso los de borde
-# intermedios) fuera de posicion regular. Dominio [0,2] x [0,2].
+# Patch test QUAD4: 4 elementos, 9 nodos. 
+# Dominio [0,2] x [0,2]. Nodos de los bordes izq. y der. equiespaciados
+# y los nodos centrales fuera de posicion regular.
+#
+# Condiciones sugeridas (F = sigma*H*t/2, H = 1  ->  sigma_x exacta = 2F/(H t)):
+#   nodo 1: ux = uy = 0        nodo 4: ux = 0 (rodillo)
+#   fuerzas en x (cargas nodales consistentes):
+#     nodo  3: 1 F
+#     nodo  6: 2 F
+#     nodo  7: -1 F
+#     nodo  9: 1 F
 
 # n_nodes n_elements dim
 9 4 2

@@ -1,0 +1,47 @@
+# Patch test QUAD8: 4 elementos, 21 nodos.
+# Dominio [0,2] x [0,2]. Nodos de los bordes izq. y der. equiespaciados;
+# el resto de los nodos (incluidos los de lado) fuera de posicion regular.
+#
+# Condiciones sugeridas (F = sigma*H*t/2, H = 1  ->  sigma_x exacta = 2F/(H t)):
+#   nodo 1: ux = uy = 0        nodo 4: ux = 0 (rodillo)
+#   fuerzas en x (cargas nodales consistentes):
+#     nodo  3: 1/3 F
+#     nodo  6: 2/3 F
+#     nodo  7: -1/3 F
+#     nodo  9: 1/3 F
+#     nodo 13: -4/3 F
+#     nodo 15: 4/3 F
+#     nodo 19: -4/3 F
+#     nodo 20: 4/3 F
+
+# n_nodes n_elements dim
+21 4 2
+
+# node_number x y
+1 0.0000 0.0000
+2 1.2000 0.0000
+3 2.0000 0.0000
+4 0.0000 1.0000
+5 1.0000 0.8000
+6 2.0000 1.0000
+7 0.0000 2.0000
+8 0.9000 2.0000
+9 2.0000 2.0000
+10 0.5040 0.0000
+11 1.0900 0.4400
+12 0.5500 0.8900
+13 0.0000 0.5000
+14 1.5360 0.0000
+15 2.0000 0.5000
+16 1.4000 0.8800
+17 0.9600 1.2800
+18 0.5040 2.0000
+19 0.0000 1.5000
+20 2.0000 1.5000
+21 1.5160 2.0000
+
+# element_number element_type connectivity
+1 QUAD8  1 2 5 4 10 11 12 13
+2 QUAD8  2 3 6 5 14 15 16 11
+3 QUAD8  4 5 8 7 12 17 18 19
+4 QUAD8  5 6 9 8 16 20 21 17

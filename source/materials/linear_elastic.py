@@ -7,7 +7,7 @@ class LinearElastic:
             raise ValueError("Expected E > 0")
         if not (-1.0 < nu < 0.5):
             raise ValueError("Expected -1 < nu < 0.5")
-        if nrho < 0.0:
+        if rho < 0.0:
             raise ValueError("Expected rho>=0")
 
         self.E = E

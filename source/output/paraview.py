@@ -55,6 +55,6 @@ def write_results(filename, mesh, elements, u):
 
     stress_blocks = []
     for indices in block_indices:
-        stress_blocks.append([elemnt_stress(elements[i], u) for i in indices])
+        stress_blocks.append([element_stress(elements[i], u) for i in indices])
 
     write(filename, points, cells, displacement, stress_blocks)
