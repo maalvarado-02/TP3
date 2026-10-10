@@ -2,16 +2,8 @@
 
 Código en Python para modelar el equilibrio estático de un sólido elástico
 lineal en 2D (estado plano de tensión) con elementos triangulares y
-cuadrangulares, lineales y cuadráticos. La aplicación es el análisis de una
-presa de gravedad (tensiones, momento estabilizante y desestabilizante).
-
-## Uso rápido
-
-```
-python check_shape.py     # verifica funciones de forma y cuadratura
-python bar_roof.py        # ejemplo de la cátedra (barras 2D, techo)
-python dam.py             # modelo de la presa (se activa por etapas)
-```
+cuadrangulares, lineales y cuadráticos (T3, T6, Q4 y Q8). La aplicación es el 
+análisis de una presa de gravedad (tensiones, momento estabilizante y desestabilizante).
 
 Dependencias: `numpy`, `meshio` (ver `requirements.txt`).
 
@@ -20,10 +12,10 @@ Dependencias: `numpy`, `meshio` (ver `requirements.txt`).
 ```
 source/
   elements/
-    quadrature.py        reglas de Gauss (triángulo, cuadrilátero, línea)
+    quadrature.py        reglas de Gauss (triángulo, cuadrilátero)
     shape_functions.py   elementos de referencia: TRI3, TRI6, QUAD4, QUAD8
     bar2d.py             barra 2D (código de la cátedra)
-    solid2d.py           elemento sólido 2D           [PENDIENTE]
+    solid2d.py           elemento sólido 2D
   materials/
     linear_elastic.py    material elástico lineal (E, nu, rho, matriz D)
   mesh/
@@ -38,6 +30,7 @@ source/
 bar_roof.py              ejemplo de la cátedra (techo)
 check_shape.py           verificación de elementos de referencia
 dam.py                   script principal de la presa, por etapas
+patch_test.py            verificacion patch-test (Tension x cte)
 meshes/                  mallas de entrada
 results/                 salidas para ParaView
 ```
@@ -76,39 +69,6 @@ Las esquinas van en sentido antihorario.
 | QUAD8    | Gauss 3 x 3            | -         |
 | aristas  | `line_rule(n)` 1D      | para cargas de borde |
 
-## Verificación (`check_shape.py`)
-
-Para cada elemento comprueba: delta de Kronecker en los nodos, partición de
-la unidad, suma de derivadas nula, derivadas contra diferencias finitas,
-reproducción de campo lineal y suma de pesos igual al área de referencia.
-Todos los errores deben dar del orden de 1e-10 o menos.
-
-## Formato de malla (propuesto, a implementar)
-
-Texto plano con secciones. El tipo de elemento, el orden y el material se
-indican en cada elemento:
-
-```
-# n_nodes n_elements dim
-MATERIALS
-# id name E nu rho
-1 concrete 21e9 0.2 2400
-NODES
-# id x y
-1 0.0 0.0
-ELEMENTS
-# id type order material n1 n2 ...
-1 QUAD4 1 1 1 2 6 5
-NODESETS
-# name  node ids
-base 1 2 3 4
-EDGESETS
-# name  element local_edge
-upstream 5 1
-```
-
-La malla del techo (`meshes/roof.mesh`, elementos `BAR2D`) se mantiene como
-caso de prueba de que el lector de mallas sigue funcionando.
 
 ## Etapas de `dam.py`
 
@@ -119,16 +79,3 @@ caso de prueba de que el lector de mallas sigue funcionando.
 5. Cargas: peso propio y presión hidrostática
 6. Condiciones de borde en la base y solución
 7. Postproceso: reacciones, tensión principal máxima, momentos, factor de seguridad
-
-## Pendientes
-
-- [ ] Unificar imports (`source.` en todos los archivos)
-- [ ] Aristas locales por elemento (para cargas de borde)
-- [ ] `LinearElastic` con `rho` y `D_plane_stress()`
-- [ ] `Solid2D` (K, fuerza de volumen, carga de arista, tensiones)
-- [ ] Lector de malla con secciones
-- [ ] Patch test por tipo de elemento
-- [ ] Generador de malla estructurada de la presa (nx, ny)
-- [ ] Visualización sobre la deformada con factor de escala
-- [ ] Momentos y factor de seguridad
-- [ ] Bonus: condición de borde Robin en la base
