@@ -1,24 +1,28 @@
 import numpy
+
 from source.mesh.mesh import Mesh
 from source.materials.linear_elastic import LinearElastic
 from source.elements.solid2d import Solid2D
 from source.systems.dense_matrix import DenseMatrix
 from source.output.paraview import write_results
+from source.systems.boundary_conditions import apply_dirichlet_bc
+from source.solvers.linear import solve
 
-THICKNESS = 1.0
+THICKNESS = 1.0   # espesor unitario (2D)
 
 # Elemento a probar:
-ELEMENT = "T6"          # "Q4", "T3", "T6" o "Q8"
-
-# --- Leer malla ----------------------------------------------------------
-mesh = Mesh()
-mesh.read("meshes/patchtest_%s.mesh" % ELEMENT)
-mesh.dofs_per_node = Solid2D.dofs_per_node
+ELEMENT = "Q8"          # "Q4", "T3", "T6" o "Q8"
 
 # --- Material ------------------------------------------------------------
 E = 200.0e9
 nu = 0.2
 material = LinearElastic(E, nu)
+
+# --- Leer malla ----------------------------------------------------------
+mesh = Mesh()
+mesh.read("meshes/patchtest_%s.mesh" % ELEMENT)
+mesh.dofs_per_node = Solid2D.dofs_per_node
+n = mesh.number_of_dofs()
 
 # --- Crear elementos -----------------------------------------------------
 elements = []
@@ -34,15 +38,30 @@ for e in range(mesh.number_of_elements()):
         )
     )
 
+print("\nTipo de Elemento: %s | Nodos: %d | Elementos: %d" % (ELEMENT, n // 2, len(elements)))
+
 # --- Ensamble global -----------------------------------------------------
-n = mesh.number_of_dofs()
 K = DenseMatrix(n)
 for el in elements:
     K.scatter_local_to_global(el)
 
-
+# --- Vector de fuerzas nodales (work-equivalent) -------------------------
 def dofs(node):
     return mesh.node_global_dofs(node - 1)
+
+f = numpy.zeros(n)
+F = 1.0e6
+
+LOADS = {
+    "Q4": {3: 1, 6: 2, 9: 1, 7: -1},
+    "T3": {3: 1, 6: 2, 9: 1, 7: -1},
+    "T6": {3: 1/3, 16: 4/3, 6: 2/3, 23: 4/3, 9: 1/3,
+           14: -4/3, 22: -4/3, 7: -1/3},
+    "Q8": {3: 1/3, 15: 4/3, 6: 2/3, 20: 4/3, 9: 1/3,
+           13: -4/3, 19: -4/3, 7: -1/3},}
+
+for node, factor in LOADS[ELEMENT].items():
+    f[dofs(node)[0]] += factor * F
 
 # Las cargas de la figura suponen nodos equiespaciados en los bordes izq y der
 def y(node):
@@ -53,64 +72,37 @@ for a, b, c in [(1, 4, 7), (3, 6, 9)]:
     if abs((y(b) - y(a)) - (y(c) - y(b))) > 1e-12:
         raise ValueError("Bordes laterales deben tener nodos equiespaciados")
 
-# --- Vector de fuerzas nodales (work-equivalent) -------------------------
-f = numpy.zeros(n)
-F = 1.0e6
-
-LOADS = {
-    "Q4": {3: 1, 6: 2, 9: 1, 7: -1},
-    "T3": {3: 1, 6: 2, 9: 1, 7: -1},
-    "T6": {3: 1/3, 16: 4/3, 6: 2/3, 23: 4/3, 9: 1/3,
-           14: -4/3, 22: -4/3, 7: -1/3},
-    "Q8": {3: 1/3, 15: 4/3, 6: 2/3, 20: 4/3, 9: 1/3,
-           13: -4/3, 19: -4/3, 7: -1/3},
-}
-
-for node, factor in LOADS[ELEMENT].items():
-    f[dofs(node)[0]] += factor * F
-
 # --- Condiciones de borde  ---------------------------------------
 fixed = []
-values = []
 
-# nodo 1 fijo: ux = 0, uy = 0
-fixed += dofs(1)
-values += [0.0, 0.0]
+fixed += dofs(1) # nodo 1 fijo: ux = 0, uy = 0
+fixed.append(dofs(4)[0]) # nodo 4 desliza en y: ux = 0
 
-# nodo 4 desliza en y: ux = 0
-fixed.append(dofs(4)[0])
-values.append(0.0)
+# --- Copias sin condiciones de borde (para autovalores y reacciones) ----
+K0 = K.values.copy()
+f0 = f.copy()
 
-print("\nelemento: %s | nodos: %d | elementos: %d" % (ELEMENT, n // 2, len(elements)))
+for dof in fixed:
+    apply_dirichlet_bc(K, f, dof, 0.0)
 
-# --- Resolver sistema reducido ------------------------------------------
+u = solve(K, f)
+
+# --- Autovalores de K reducida (chequeo de estabilidad) ------------------
 free = [d for d in range(n) if d not in fixed]
+ev = numpy.linalg.eigvalsh(K0[numpy.ix_(free, free)])
+print("\nAutovalor minimo/maximo de K reducida: %.2e (debe ser > 0)" % (ev.min() / ev.max()))
 
-Kff = K.values[numpy.ix_(free, free)]
-ev = numpy.linalg.eigvalsh(Kff)
-print("\nautovalor minimo / maximo de K reducida: %.2e (debe ser > 0)" % (ev.min() / ev.max()))
-
-u = numpy.zeros(n)
-u[fixed] = values
-
-u[free] = numpy.linalg.solve(
-    Kff,
-    f[free] - K.values[numpy.ix_(free, fixed)] @ u[fixed]
-)
-
-# --- Reacciones: R = K u - f -------------------------------------------------
-R = K.values @ u - f
+# --- Reacciones: R = K0 u - f0 -------------------------------------------
+R = K0 @ u - f0
 r = 1/3 if ELEMENT in ("T6", "Q8") else 1.0
-print("reaccion x nodo 1: %.4e (esperada %.4e)" % (R[dofs(1)[0]], -r * F))
-print("reaccion x nodo 4: %.4e (esperada %.4e)" % (R[dofs(4)[0]], -2 * r * F))
-
+print("\nReaccion x nodo 1: %.4e (esperada %.4e)" % (R[dofs(1)[0]], -r * F))
+print("Reaccion x nodo 4: %.4e (esperada %.4e)" % (R[dofs(4)[0]], -2 * r * F))
 
 # --- Tension sigma_x en esquinas y puntos de Gauss ---------------------------
 def sigma_x(el, xi, eta):
     B, detJ = el.B_and_detJ(xi, eta)
     ue = numpy.array([u[d] for d in el.global_dofs()])
     return (el.D @ (B @ ue))[0]
-
 
 sigma_exact = 2 * F / (H * THICKNESS)
 

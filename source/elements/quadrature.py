@@ -22,3 +22,7 @@ def quad_rule(n):
             points.append([x[i], x[j]])
             weights.append(w[i] * w[j])
     return numpy.array(points), numpy.array(weights)
+
+
+def line_rule(n): #Gauss 1D en [-1, 1], para cargas sobre aristas.
+    return numpy.polynomial.legendre.leggauss(n)

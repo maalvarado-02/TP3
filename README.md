@@ -31,27 +31,26 @@ Dependencias: `numpy`, `meshio` (ver `requirements.txt`).
 ```
 source/
   elements/
-    quadrature.py        reglas de Gauss (triángulo, cuadrilátero, línea)
-    shape_functions.py   elementos de referencia (N, dN): TRI3, TRI6, QUAD4, QUAD8
-    bar2d.py             barra 2D (código de la cátedra)
-    solid2d.py           elemento sólido 2D (B, detJ, Ke)
+    quadrature.py          reglas de Gauss (triángulo, cuadrilátero, línea)
+    shape_functions.py     elementos de referencia (N, dN): TRI3, TRI6, QUAD4, QUAD8
+    solid2d.py             elemento sólido 2D (B, detJ, Ke)
   materials/
-    linear_elastic.py    material elástico lineal (E, nu, rho, matriz D)
+    linear_elastic.py      material elástico lineal (E, nu, rho, matriz D)
   mesh/
-    mesh.py, node.py     lectura de malla y conectividades
+    mesh.py, node.py       lectura de malla y conectividades
   systems/
-    dense_matrix.py      matriz de rigidez densa y ensamble
+    dense_matrix.py        matriz de rigidez densa y ensamble
     boundary_conditions.py   condiciones de Dirichlet
+    loads.py               aplicar cargas de peso e hidrostaticas
   solvers/
-    linear.py            resolución K u = f
+    linear.py              resolución K u = f
   output/
-    paraview.py          escritura de resultados .vtu (meshio)
-bar_roof.py              ejemplo de la cátedra (techo de barras)
-check_shape.py           verificación de elementos de referencia
-dam.py                   script principal de la presa, por etapas
-patch_test.py            verificacion patch-test de los 4 elementos (σx cte)
-meshes/                  mallas de entrada (patch test y presa)
-results/                 salidas para ParaView
+    paraview.py            escritura de resultados .vtu (meshio)
+check_shape.py             verificación de elementos de referencia
+dam.py                     script principal de la presa, por etapas
+patch_test.py              verificacion patch-test de los 4 elementos (σx cte)
+meshes/                    mallas de entrada (patch test y presa)
+results/                   salidas para ParaView
 ```
 
 ## Elementos de referencia (`shape_functions.py`)
@@ -104,9 +103,9 @@ Solid2D(global_id, node_global_ids, mesh, material, thickness, element_type) sir
 
 Texto plano; las líneas que empiezan con # son comentarios.
 
-n_nodes n_elements dim
-node_number x y                       (numeración desde 1)
-element_number element_type connectivity   (TRI3, TRI6, QUAD4, QUAD8)
+n_nodes   n_elements   dim
+node_number   x   y                       (numeración desde 1)
+element_number   element_type   connectivity   (TRI3, TRI6, QUAD4, QUAD8)
 
 
 ## Patch test (patch_test.py)
@@ -120,10 +119,11 @@ Parche de elementos irregulares con un nodo interno y cargas nodales equivalente
 
 ## Etapas de `dam.py`
 
-1. Elementos de referencia (hecho)
+1. Datos de geometria (hecho)
 2. Material con matriz D (plane stress) (hecho)
 3. Malla y elementos `Solid2D` (hecho para el patch test; falta la malla de la presa)
-4. Ensamble de K
+4. Ensamble de K (hecho)
 5. Cargas: peso propio y presión hidrostática
-6. Condiciones de borde en la base y solución
-7. Postproceso: reacciones, tensión principal máxima, momentos, factor de seguridad
+6. Condiciones de borde en la base
+7. Solución del sistema K.u=f y testeo de singularidad de K
+8. Postproceso: reacciones, tensión principal máxima, momentos, factor de seguridad
