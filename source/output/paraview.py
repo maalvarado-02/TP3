@@ -31,7 +31,7 @@ def principal_max(sigma):
     #tension principal maxima en el plano 
     sx, sy, txy = sigma
     return (sx + sy)/ 2 + numpy.sqrt(((sx-sy)/2)**2 + txy**2)
-def element_sigma1_max(sigma):
+def element_sigma1_max(element, u):
     # maximo de sigma_1 entre los puntos de gauss del elemento
     ue=u[element.global_dofs()]
     values=[]
@@ -71,5 +71,5 @@ def write_results(filename, mesh, elements, u, scale=0.0):
     sigma1_blocks=[]
     for indices in block_indices:
         stress_blocks.append([element_stress(elements[i], u) for i in indices])
-        sigma1_blocks.append([element_sigma1_max8elements[i], u) for i in indices])
-    write(filename, points, cells, displacement, stress-blocks, sigma1_blocks)
+        sigma1_blocks.append([element_sigma1_max(elements[i], u) for i in indices])
+    write(filename, points, cells, displacement, stress_blocks, sigma1_blocks)
