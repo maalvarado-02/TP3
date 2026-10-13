@@ -10,7 +10,7 @@ class Solid2D:
     dofs_per_node = 2
 
     def __init__(self, global_id, node_global_ids, mesh, material, thickness,
-                 element_type):
+                 element_type, analysis="plane_stress"):
         if element_type not in SUPPORTED:
             raise ValueError("Element type not supported yet: " + element_type)
 
@@ -31,7 +31,10 @@ class Solid2D:
             self.X[a, 0] = node.x
             self.X[a, 1] = node.y
 
-        self.D = material.D_plane_stress()
+        if analysis == "plane_strain":
+            self.D = mterial.D_plane_strain()
+        else:
+            self.D = material.D_plane_stress()
 
         # Ke = sum_g B^T D B detJ t w
         points, weights = self.ref.gauss_rule()
