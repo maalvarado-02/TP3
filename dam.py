@@ -107,10 +107,10 @@ print("\nAutovalor minimo/maximo de K reducida: %.2e (debe ser > 0)" % (ev.min()
 # ETAPA 8: Postproceso y resultados (reacciones, tensiones, momentos, FS)
 # ---------------------------------------------------------------
 SCALE=2000.0 #factor de escala de la deformación para ParaView
-write_results("results/dam_%s-vtu" % ELEMENT, mesh, elements, u, SCALE)
+write_results("results/dam_%s.vtu" % ELEMENT, mesh, elements, u, SCALE)
 
 #---Tensión principal maxima---
-sigma1= [element_sigma1_max8el,u) for el in elements]
+sigma1= [element_sigma1_max(el,u) for el in elements]
 e_max= int(numpy.argmax(sigma1))
 xc, yc = elements[e_max].X.mean(axis=0)
 print("\nsigma_1 maxima: %.3f MPa en el elemento %d (x = %.1f m, y = %.1f m)"
