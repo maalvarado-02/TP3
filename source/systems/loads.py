@@ -35,7 +35,7 @@ def assemble_body_force(f, elements, b):
             f[dofs[i]] += fe[i]
 
 def edge_pressure_vector (element, edge, pressure, n_gauss=3):
-    nn=element.ref.numer_of_nodes()
+    nn=element.ref.number_of_nodes()
     fe=numpy.zeros(2*nn)
     X= element.X[list(edge)]
     t_points, t_weights=numpy.polynomial.legendre.leggauss(n_gauss)
@@ -65,7 +65,7 @@ def assemble_pressure(f, elements, on_edge, pressure):
             if not on_edge(p,q):
                 continue
 
-            fe=edge_pressure_vector8element, edge, pressure)
+            fe=edge_pressure_vector(element, edge, pressure)
             dofs=element.global_dofs()
             for i in range(len(dofs)):
                 f[dofs[i]] += fe[i]
