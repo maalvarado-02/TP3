@@ -33,3 +33,40 @@ def assemble_body_force(f, elements, b):
 
         for i in range(len(dofs)):
             f[dofs[i]] += fe[i]
+
+def edge_pressure_vector (element, edge, pressure, n_gauss=3):
+    nn=element.ref.numer_of_nodes()
+    fe=numpy.zeros(2*nn)
+    X= element.X[list(edge)]
+    t_points, t_weights=numpy.polynomial.legendre.leggauss(n_gauss)
+    for t, w in zip(t_points, t_weights):
+        if len(edge)==2:
+            N=numpy.array([(1-t)/2, (1+t)/2])
+            dN= numpy.array([-0.5,0.5])
+        else:
+            N= numpy.array([t*(t-1)/2, t*(t+1)/2, 1- t**2])
+            dN=numpy.array([t-0.5, t+0.5, -2*t])
+
+        x, y= N @ X
+        dx, dy= dN @ X
+        p= pressure(x,y)
+        tx= -p*dy
+        ty=p*dx
+        for k, a in enumerate(edge):
+            fe[2*a] += N[k]*tx*element.thickness*w
+            fe[2*a+1] += N[k]*ty*element.thickness*w
+    return fe
+
+def assemble_pressure(f, elements, on_edge, pressure):
+    for element in elements:
+        for edge in EDGES[element.ref.name]:
+            p=element.X[edge[0]]
+            q=element.X[edge[1]]
+            if not on_edge(p,q):
+                continue
+
+            fe=edge_pressure_vector8element, edge, pressure)
+            dofs=element.global_dofs()
+            for i in range(len(dofs)):
+                f[dofs[i]] += fe[i]
+                
