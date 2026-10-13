@@ -4,7 +4,7 @@ from source.mesh.mesh import Mesh
 from source.materials.linear_elastic import LinearElastic
 from source.elements.solid2d import Solid2D
 from source.systems.dense_matrix import DenseMatrix
-from source.systems.loads import assemble_body_force#, assemble_pressure
+from source.systems.loads import assemble_body_force, assemble_pressure
 from source.systems.boundary_conditions import apply_dirichlet_bc
 from source.solvers.linear import solve
 from source.output.paraview import write_results
