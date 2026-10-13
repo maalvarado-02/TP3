@@ -29,8 +29,8 @@ TOL = 1.0e-9
 
 # ETAPA 2: Material con matriz constitutiva D (plane stress)
 # ---------------------------------------------------------------
-E = 200.0e9
-nu = 0.2
+E = 21.0e9   #el material es hormigón H21
+nu = 0.25 
 rho= RHO_CONCRETE
 material = LinearElastic(E, nu, rho)
 
@@ -70,8 +70,9 @@ f = numpy.zeros(n)
 
 # Peso propio: fuerza de cuerpo x unidad de volumen b=(0, -rho g)
 assemble_body_force(f, elements, (0.0, -RHO_CONCRETE * G))
-'''
+
 # Presion hidrostatica sobre la cara aguas arriba (x = 0), solo bajo el nivel del agua
+
 def on_upstream_face(p, q):
     return (abs(p[0]) < TOL and abs(q[0]) < TOL
             and p[1] <= WATER + TOL and q[1] <= WATER + TOL)
@@ -80,7 +81,7 @@ def hydrostatic_pressure(x, y):
     return RHO_WATER * G * (WATER - y)
  
 assemble_pressure(f, elements, on_upstream_face, hydrostatic_pressure)
- '''
+
 # Copias antes de aplicar CB (para autovalores y reacciones)
 K0 = K.values.copy()
 f0 = f.copy()
@@ -95,6 +96,7 @@ base_nodes = [k for k in range(n // Solid2D.dofs_per_node) if abs(mesh.node(k).y
 
 for node in base_nodes:
     for dof in mesh.node_global_dofs(node):
+        fixed.append(dof)
         apply_dirichlet_bc(K, f, dof, 0.0)
 
 
