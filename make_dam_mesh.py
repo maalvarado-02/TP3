@@ -24,7 +24,7 @@ def dam_mesh(element="Q4", nx=4, ny=8, ny_top=1, height=HEIGHT, base=BASE, crest
   def x_right(y):
     return base+(crest-base)*y/height
 
-  def y_of(I,J):
+  def y_of(J):
     if J<=2*ny:
       return water*J/(2*ny)
     return water + freeboard*(J-2*ny)/(2*ny_top)
@@ -62,20 +62,20 @@ def dam_mesh(element="Q4", nx=4, ny=8, ny_top=1, height=HEIGHT, base=BASE, crest
 
   return nodes, elements, ELEMENT_NAMES[element]
 
-def wirte_mesh(filename, nodes, elements, element_name, header=""): 
+def write_mesh(filename, nodes, elements, element_name, header=""): 
   with open(filename, "w") as f: 
     if header:
       for line in header.strip().splitlines():
-        f.write(" %s\n" % line)
+        f.write("# %s\n" % line)
       f.write("\n")
     f.write("# n_nodes n_elements dim\n")
     f.write("%d %d 2\n\n" % (len(nodes), len(elements)))
-    f.wirte("# node_number x y\n")
+    f.write("# node_number x y\n")
     for k, (x, y) in enumerate(nodes,1):
       f.write("%d %.6f %.6f\n" % (k, x, y))
     f.write("\n# element_number element_type connectivity\n")
     for k, conn in enumerate(elements, 1):
-      f.write8"%d %-6s %s\n" % (k, element_name, " ".join(str(c) for c in conn)))
+      f.write("%d %-6s %s\n" % (k, element_name, " ".join(str(c) for c in conn)))
       
 
 def make_dam_mesh (element="Q4", nx=4, ny=8, ny_top=1, filename=None, **geometry): 
@@ -86,12 +86,12 @@ def make_dam_mesh (element="Q4", nx=4, ny=8, ny_top=1, filename=None, **geometry
   g=dict(height=HEIGHT, base=BASE, crest=CREST, freeboard=FREEBOARD, upstream_batter=UPSTREAM_BATTER)
   g.update(geometry)
   header=("Presa de gravedad generada con make_dam_mesh.py\n"
-          "altura %g, base %g cresta %g, borde libre %g, talud aguas arriba %g\n"
+          "altura %g, base %g, cresta %g, borde libre %g, talud aguas arriba %g\n"
           "%s, nx=%d, ny=%d (bajo el agua) + %d (borde libre)\n"
           "Cara aguas arriba en x= %g (en la base), base en y=0."
           %(g["height"], g["base"], g["crest"], g["freeboard"], g["upstream_batter"], name, nx, ny, ny_top, g["upstream_batter"]))
   write_mesh(filename, nodes, elements, name, header)
-  print("%s: $d nodos, %d elementos -> %s" %(name, len(nodes), len(elements), filename))
+  print("%s: %d nodos, %d elementos -> %s" %(name, len(nodes), len(elements), filename))
   return filename
 
 
