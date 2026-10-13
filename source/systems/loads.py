@@ -33,6 +33,13 @@ def assemble_body_force(f, elements, b):
 
         for i in range(len(dofs)):
             f[dofs[i]] += fe[i]
+def assemble_gravity(f, elements, g):
+    for element in elements:
+        b=(0.0, -element.material.rho*g)
+        fe= body_force_vector(element, b)
+        dofs= element.global_dofs()
+        for i in range(len(dofs)):
+            f[dofs[i]] += fe[i]
 
 def edge_pressure_vector (element, edge, pressure, n_gauss=3):
     nn=element.ref.number_of_nodes()
