@@ -32,7 +32,7 @@ class Solid2D:
             self.X[a, 1] = node.y
 
         if analysis == "plane_strain":
-            self.D = mterial.D_plane_strain()
+            self.D = material.D_plane_strain()
         else:
             self.D = material.D_plane_stress()
 
