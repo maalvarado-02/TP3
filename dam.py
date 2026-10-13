@@ -4,7 +4,7 @@ from source.mesh.mesh import Mesh
 from source.materials.linear_elastic import LinearElastic
 from source.elements.solid2d import Solid2D
 from source.systems.dense_matrix import DenseMatrix
-from source.systems.loads import assemble_body_force, assemble_pressure
+from source.systems.loads import assemble_gravity, assemble_pressure
 from source.systems.boundary_conditions import apply_dirichlet_bc
 from source.solvers.linear import solve
 from source.output.paraview import write_results
@@ -15,9 +15,7 @@ ELEMENT = "Q4"          # "Q4", "T3", "T6" o "Q8"
 
 # ETAPA 1: Datos de geometria
 # ---------------------------------------------------------------
-THICKNESS = 1.0                 # espesor unitario (2D): cargas por metro de ancho
 G = 9.81
-RHO_CONCRETE = 2400.0
 RHO_WATER = 1000.0
  
 HEIGHT = 30.0
@@ -29,10 +27,6 @@ TOL = 1.0e-9
 
 # ETAPA 2: Material con matriz constitutiva D (plane stress)
 # ---------------------------------------------------------------
-E = 21.0e9   #el material es hormigón H21
-nu = 0.25 
-rho= RHO_CONCRETE
-material = LinearElastic(E, nu, rho)
 
 
 # ETAPA 3: Malla y elementos
@@ -48,9 +42,10 @@ for e in range(mesh.number_of_elements()):
         mesh.element_global_ids[e],
         mesh.connectivity[e],
         mesh,
-        material,
-        THICKNESS,
+        mesh.element_material(e),
+        mesh.thickness,
         mesh.element_types[e],
+        mesh.analysis,
     )
     elements.append(element)
 
@@ -68,9 +63,8 @@ for el in elements:
 # ---------------------------------------------------------------
 f = numpy.zeros(n)
 
-# Peso propio: fuerza de cuerpo x unidad de volumen b=(0, -rho g)
-assemble_body_force(f, elements, (0.0, -RHO_CONCRETE * G))
-
+#Peso propio: b=(0, -rho g) con la rho del material de cada elemento
+assemble_gravity(f, elements, G)
 # Presion hidrostatica sobre la cara aguas arriba (x = 0), solo bajo el nivel del agua
 
 def on_upstream_face(p, q):
