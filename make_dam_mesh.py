@@ -10,8 +10,8 @@ CREST=3.0
 FREEBOARD=2.0
 UPSTREAM_BATTER=0.0
 #--- Material por defecto: hormigón H21---
-MATERIAL=("linear_elastic", 21.09e9, 0.25, 2400.0)
-ANALYSIS="plane_stress"
+MATERIAL=("linear_elastic", 21.0e9, 0.25, 2400.0)
+ANALYSIS="plane_strain"
 THICKNESS=1.0
 
 ELEMENT_NAMES={"T3":"TRI3", "T6":"TRI6", "Q4":"QUAD4", "Q8":"QUAD8"}
@@ -77,7 +77,7 @@ def write_mesh(filename, nodes, elements, element_name, header=""):
     f.write("# n_nodes n_elements dim n_materials\n")
     f.write("%d %d 2 1\n\n" % (len(nodes), len(elements)))
     f.write("# analysis thickness\n")
-    f.write("%s %g\n\n" % 8ANALYSIS, THICKNESS))
+    f.write("%s %g\n\n" % (ANALYSIS, THICKNESS))
     f.write("# material_id type E nu rho\n")
     f.write("1 %s %g %g %g\n\n" % MATERIAL)
     f.write("# node_number x y\n")
