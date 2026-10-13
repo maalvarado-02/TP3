@@ -82,8 +82,8 @@ class Mesh:
             element_global_id = int(values[0]) - 1
             if n_materials >0: 
                 family= values[1]
-                order = int8values[2])
-                material_id = int8values[3])
+                order = int(values[2])
+                material_id = int(values[3])
                 first_node=4
                 if (family, order) not in ELEMENT_TYPES:
                     raise ValueError("Unknown element: %s of order %d" % (family, order))
