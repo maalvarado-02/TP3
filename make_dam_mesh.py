@@ -9,8 +9,13 @@ BASE=18.0
 CREST=3.0
 FREEBOARD=2.0
 UPSTREAM_BATTER=0.0
+#--- Material por defecto: hormigón H21---
+MATERIAL=("linear_elastic", 21.09e9, 0.25, 2400.0)
+ANALYSIS="plane_stress"
+THICKNESS=1.0
 
 ELEMENT_NAMES={"T3":"TRI3", "T6":"TRI6", "Q4":"QUAD4", "Q8":"QUAD8"}
+FAMILY_ORDER={"TRI3":("TRI",1), "TRI6":("TRI",2), "QUAD4":("QUAD",1), "QUAD8":("QUAD",2)}
 
 
 def dam_mesh(element="Q4", nx=4, ny=8, ny_top=1, height=HEIGHT, base=BASE, crest=CREST, freeboard=FREEBOARD, upstream_batter=UPSTREAM_BATTER):
@@ -63,19 +68,24 @@ def dam_mesh(element="Q4", nx=4, ny=8, ny_top=1, height=HEIGHT, base=BASE, crest
   return nodes, elements, ELEMENT_NAMES[element]
 
 def write_mesh(filename, nodes, elements, element_name, header=""): 
+  family, order = FAMILY_ORDER[element_name]
   with open(filename, "w") as f: 
     if header:
       for line in header.strip().splitlines():
         f.write("# %s\n" % line)
       f.write("\n")
-    f.write("# n_nodes n_elements dim\n")
-    f.write("%d %d 2\n\n" % (len(nodes), len(elements)))
+    f.write("# n_nodes n_elements dim n_materials\n")
+    f.write("%d %d 2 1\n\n" % (len(nodes), len(elements)))
+    f.write("# analysis thickness\n")
+    f.write("%s %g\n\n" % 8ANALYSIS, THICKNESS))
+    f.write("# material_id type E nu rho\n")
+    f.write("1 %s %g %g %g\n\n" % MATERIAL)
     f.write("# node_number x y\n")
     for k, (x, y) in enumerate(nodes,1):
       f.write("%d %.6f %.6f\n" % (k, x, y))
-    f.write("\n# element_number element_type connectivity\n")
+    f.write("\n# element_number family order material_id connectivity\n")
     for k, conn in enumerate(elements, 1):
-      f.write("%d %-6s %s\n" % (k, element_name, " ".join(str(c) for c in conn)))
+      f.write("%d %-4s %d 1 %s\n" % (k, family, order, " ".join(str(c) for c in conn)))
       
 
 def make_dam_mesh (element="Q4", nx=4, ny=8, ny_top=1, filename=None, **geometry): 
