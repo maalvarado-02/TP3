@@ -5,7 +5,7 @@
 <Piece NumberOfPoints="25" NumberOfCells="8">
 <Points>
 <DataArray type="Float64" Name="Points" NumberOfComponents="3" format="binary">
-AQAAAACAAABYAgAAsgAAAA==eJxjYMAOjMHgsz0OaQcc4lDwwR6dP2smCLxEN88Bu3pMe86eAYE39ujiaHy4eMjjpbOPKDzAMLfQluv64oKP9pox/Ye+atyBy0Pc9xCH+E17iL63ONyJsOdXXdaeksk/CPgHof5hlcg694e/7CHh/RjN3p8Y9u6Qa30duOOdfTVIW9UXuPibQJDMTag53+HiaOEADx9UgOFeB3RxmHuCwA5AiK845m3e6fgDw3wAro9qow==
+AQAAAACAAABYAgAAMwEAAA==eJxjYMAOTq9ZOFk54bM9c2f3frZlU/bAxFfuYvtdpMrg8OreDfli1SV70PWtXlTT5Pb2vT2q+g/2e6RPnZvX9dIe3ZxVaOoz5wb2CPbMt4GY8x8ubthcFGsq8NYeXRxmDrr4qprzHi1uD+w/aZyePndKA9ydlo6Sy0pnfrR/0SJYWy1xB65+l3GI++lDDzHE+SdeP9Jy9aZ9vaXplcz4t3BxpZ29Z9xsA6HuvA8XZ2mcGPbrzA97Y0svecmCORjhthJNvYzq+nOGCr/tz0wRl/6u/hjN3p/2dWj2uj40fWPB8N4+2dO66GneF7i4cJkvu4HGLXslzfTX81W/w8VXQ8MBIzyTFI/c+jLBhrHq7sMvH79jhCcDmjjMPWrpy8o3OP+AizPOkRbxr/qBYT4AmcO8qQ==
 </DataArray>
 </Points>
 <Cells>
@@ -21,12 +21,18 @@ AQAAAACAAABAAAAADgAAAA==eJwTY4AAMTJpABkAALE=
 </Cells>
 <PointData>
 <DataArray type="Float64" Name="displacement" NumberOfComponents="3" format="binary">
-AQAAAACAAABYAgAAUQEAAA==eJxjYMAONJ4IFBZrvbS7lyY1Xa2LdQ9M/FbG446tP77YnfqmN6vcWXgPur6pb7cu+H7swD4YnzkTpP6JXd3GPbM+Xd8FF+fKhJjD+AFV/dppsXqnYjltOsHmXICLb1p9Zsq1+4/s5N6himtBzdmFJn755PJlK5Sv2n1X/BjxRuvDbpi49doj05/cfmY38ShTuUr7Wrj6WWq/aqYIXre7eghVfDnEHXYxp1RT997bBxd3sUzaz6TftnsXWH4DXFw0c4mmtvQHO5li75yZH3ng4fMaGm5Vn1DVc1zuNt0+96NdUTvvl6+KW+Di88HmfrCLOYtq79pmkLondnG9Bo/6Ko/CxZPTX7cu/3PBLvy/1Z3NwSfg4o9OQcLhDlp4Nl9TnvHj9D9rJ3A8n4SLS0PDc8czVPFtUPcUrpi5JrIBIc7z4G7Ht1Pv7arRwh8ABSLkfQ==
+AQAAAACAAABYAgAASgEAAA==eJxjYMAOrrI0Cp89JGO/x05ZTjZPaw9MfI/etKervqvb89q0yXWetNyDoQ8s/30fjH8HzBe3T4hcvb1D5zNc/BrUHH8DVPXPD8gLrTcwsTkJlmffDxP/d3jBOclJovZG+qjiT6Dm1KCJz59btu+ABof9nPTJi6UtReHuVOcvXvtAXsr+6vp8g2Txp3B7787s/mMdy2X/ax2q+JYIkLuZ7XNvXsy5wPMNLm72vbzsn8Az67dg+5/DxbfN0QwxzFCyN91n6e5sbAS39xzUnZ8MUdVXN/N++aqoYt/CDgrvN3DxdWB7le0jbqHaK81istKWSdw+O9q1Z/naf3DxlY8Psz3JZLZv9yh+Fp3ACA+H8HmQcOBAC5+ly2osvLeo2ogvNtA58BOh/j7UndfQxHdC3ZOj51ktbc4EF9cTEmS9pqVkn4BmPgBmBLoR
 </DataArray>
 </PointData>
 <CellData>
 <DataArray type="Float64" Name="stress" NumberOfComponents="3" format="binary">
-AQAAAACAAADAAAAArwAAAA==eJx7+v////oWO8fTdRcOvbG+YHu8sG0Ob4LKPg4GBoYGoLjqB1UxJUaefU8sitbIZRju+wpVryt5q4HD99dehz7ltN/y7/f+hopn+GrI3rMX2GfZ1/x5DbuYnTLUnC1qIhtyLyjuW71qVs+fcHE7Xqj4zE3iawNyRO1kj3/cOc+bx04SKn7RoVqhYqaY3YlCGUUzbYF93FBx4R9BLaXyYvuKZY4z7r33ci8AzvJRJw==
+AQAAAACAAADAAAAAqgAAAA==eJz7/P////oWO8feGb/4s6dx7wsNLeXebsG6j4WBgaEBKD57YZB4/XGJfatXTTrNla+6jwcqzuxtlxBlxmW3ehXX4r4aRjuY+hXxOX9ebWbYB+SunNh6Z68IVLzid3Dwk4eqQHOynJbq8dgxQMXPsM+U7nnx3zY0NLRE7xyn3Reoe46p3XujIcMMNOfAnbAu3n2foeLSNcZOdYU8QHNe2Xz8x7gPAFY+UZ8=
+</DataArray>
+<DataArray type="Float64" Name="principal_stress" NumberOfComponents="2" format="binary">
+AQAAAACAAACAAAAAOQAAAA==eJz7/P////oWO0cGMODYxwIkG+B8iX08KHwOO1R5hn0iKHy1fQyo8nZfUMxn2PcZhS+wDwAIix1d
+</DataArray>
+<DataArray type="Float64" Name="von_mises" format="binary">
+AQAAAACAAABAAAAAJwAAAA==eJz78v////oWO0d2BgaGBiDNBaVZobQklP4PVfcVSn+B0gAe5RwU
 </DataArray>
 </CellData>
 </Piece>

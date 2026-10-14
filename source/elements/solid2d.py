@@ -2,17 +2,16 @@ import numpy
 
 from source.elements.shape_functions import reference_element
 
-# Tipos habilitados por ahora. Al agregar un elemento, sumarlo aca.
-SUPPORTED = ("TRI3", "TRI6", "QUAD4", "QUAD8")
+# Matriz de rigidez elemental (Ke = sum_g B^T D B detJ t wg) de un elemento 2D isoparamétrico (triangular o cuadrilátero)
 
+SUPPORTED = ("TRI3", "TRI6", "QUAD4", "QUAD8") # Tipos habilitados por ahora. Al agregar un elemento, sumarlo aca.
 
-class Solid2D: 
+class Solid2D:
     dofs_per_node = 2
 
-    def __init__(self, global_id, node_global_ids, mesh, material, thickness,
-                 element_type, analysis="plane_stress"):
+    def __init__(self, global_id, node_global_ids, mesh, material, thickness, element_type, formulation): # Elemento finito 2D
         if element_type not in SUPPORTED:
-            raise ValueError("Element type not supported yet: " + element_type)
+            raise ValueError("Tipo de elemento no soportado aún: " + element_type)
 
         self.global_id = global_id
         self.node_global_ids = node_global_ids
@@ -22,34 +21,36 @@ class Solid2D:
         self.ref = reference_element(element_type)
 
         if len(node_global_ids) != self.ref.number_of_nodes():
-            raise ValueError("Wrong number of nodes for " + element_type)
+            raise ValueError("Número incorrecto de nodos para " + element_type)
 
-        # coordenadas nodales (nn, 2)
+        # Coordenadas nodales (nn, 2)
         self.X = numpy.zeros((self.ref.number_of_nodes(), 2))
         for a, node_global_id in enumerate(node_global_ids):
             node = mesh.node(node_global_id)
             self.X[a, 0] = node.x
             self.X[a, 1] = node.y
 
-        if analysis == "plane_strain":
+        # Selección de la matriz constitutiva según la formulación
+        if formulation == "plane_stress":
+            self.D = material.D_plane_stress()
+        elif formulation == "plane_strain":
             self.D = material.D_plane_strain()
         else:
-            self.D = material.D_plane_stress()
+            raise ValueError("Formulacion desconocida: " + formulation)
 
-        # Ke = sum_g B^T D B detJ t w
+        # Ke = sum_g B^T D B detJ t wg
         points, weights = self.ref.gauss_rule()
         nd = self.dofs_per_node * self.ref.number_of_nodes()
         self.Ke = numpy.zeros((nd, nd))
 
-        for (xi, eta), w in zip(points, weights):
+        for (xi, eta), w in zip(points, weights):   # Arma la matriz de rigidez elemental Ke del elemento
             B, detJ = self.B_and_detJ(xi, eta)
             self.Ke += B.T @ self.D @ B * detJ * thickness * w
 
-    def B_and_detJ(self, xi, eta):
-        """Matriz B (3 x 2nn) y det(J) en el punto (xi, eta)."""
+    def B_and_detJ(self, xi, eta):   # Calcula la matriz de deformaciones B (3 x 2nn) y el det(J) en un punto (xi, eta) del elemento.
         N, dN = self.ref.shape(xi, eta)
 
-        J = self.X.T @ dN                      # J[i, j] = dx_i / dxi_j
+        J = self.X.T @ dN                   # J[i, j] = dx_i / dxi_j
         detJ = numpy.linalg.det(J)
 
         if detJ <= 0.0:
@@ -68,7 +69,7 @@ class Solid2D:
 
         return B, detJ
 
-    def global_dofs(self):
+    def global_dofs(self):   # Lista de grados de libertad globales del elemento (2 por nodo)
         dofs = []
 
         for node_global_id in self.node_global_ids:
@@ -77,5 +78,28 @@ class Solid2D:
 
         return dofs
 
-    def stiffness_matrix(self):
+    def stiffness_matrix(self):   # Devuelve la matriz de rigidez elemental (Ke) del elemento
         return self.Ke
+
+    def stress_at(self, xi, eta, u):   # Tension [sxx, syy, txy] en un punto (xi, eta) del elemento
+        ue = u[self.global_dofs()]
+        B, _ = self.B_and_detJ(xi, eta)
+        return self.D @ (B @ ue)
+
+    def stress_at_gauss(self, u):   # Tension en cada punto de Gauss
+        points, _ = self.ref.gauss_rule()
+        return [self.stress_at(xi, eta, u) for xi, eta in points]
+
+    def average_stress(self, u):   # Tension promedio del elemento (una por celda, para graficar)
+        stresses = self.stress_at_gauss(u)
+        return sum(stresses) / len(stresses)
+
+    def principal_stress(self, u):   # Tensiones principales del elemento
+        sxx, syy, txy = self.average_stress(u)
+        s1 = 0.5*(sxx + syy) + numpy.sqrt(0.25*(sxx - syy)**2 + txy**2)
+        s2 = 0.5*(sxx + syy) - numpy.sqrt(0.25*(sxx - syy)**2 + txy**2)
+        return numpy.array([s1, s2])
+
+    def vonMises_stress(self, u):   # Tensión equivalente de Von Mises del elemento
+        sxx, syy, txy = self.average_stress(u)
+        return numpy.sqrt(sxx**2 - sxx*syy + syy**2 + 3*txy**2)

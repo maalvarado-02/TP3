@@ -2,8 +2,9 @@ import numpy
 
 from source.elements.quadrature import triangle_rule, quad_rule
 
+# Armado de funciones de forma N y derivadas dN para elementos 2D en coord parametricas (xi, eta)
 
-class ReferenceElement:
+class ReferenceElement:   # Clase base para elementos de referencia 2D (triangulos y cuadrilateros)
     name = ""
     meshio_type = ""        # nombre de celda para meshio / ParaView
     node_coords = []
@@ -22,7 +23,7 @@ class ReferenceElement:
         raise NotImplementedError
 
 
-class Tri3(ReferenceElement):
+class Tri3(ReferenceElement):   # Elemento triangular lineal de 3 nodos
     name = "TRI3"
     meshio_type = "triangle"
     node_coords = [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0)]
@@ -43,7 +44,7 @@ class Tri3(ReferenceElement):
         return triangle_rule(1)
 
 
-class Tri6(ReferenceElement):
+class Tri6(ReferenceElement):   # Elemento triangular cuadratico de 6 nodos
     name = "TRI6"
     meshio_type = "triangle6"
     node_coords = [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0),
@@ -72,7 +73,7 @@ class Tri6(ReferenceElement):
         return triangle_rule(3)
 
 
-class Quad4(ReferenceElement):
+class Quad4(ReferenceElement):   # Elemento cuadrilatero bilineal de 4 nodos
     name = "QUAD4"
     meshio_type = "quad"
     node_coords = [(-1.0, -1.0), (1.0, -1.0), (1.0, 1.0), (-1.0, 1.0)]
@@ -94,7 +95,7 @@ class Quad4(ReferenceElement):
         return quad_rule(2)
 
 
-class Quad8(ReferenceElement):
+class Quad8(ReferenceElement):   # Elemento cuadrilatero cuadratico de 8 nodos
     name = "QUAD8"
     meshio_type = "quad8"
     node_coords = [(-1.0, -1.0), (1.0, -1.0), (1.0, 1.0), (-1.0, 1.0),

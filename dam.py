@@ -13,20 +13,36 @@ from source.output.paraview import write_results, element_sigma1_max
 # --- Elemento de la malla  -----------------------------------------------
 ELEMENT = "Q4"          # "Q4", "T3", "T6" o "Q8"
 
+# --- Tipo de formulación constitutiva ------------------------------------
+FORMULATION = "plane_strain"     # "plane_stress" o "plane_strain"
+
+# --- Factor de escala de la deformada para ParaView/graficos -------------
+ # scale = 0 (geometría original sin deformación)
+ # scale = 1 (deformada real (x + u))
+ # scale > 1 (la deformada se exagera para visualizarla mejor)
+SCALE = 100
+
 # ETAPA 1: Datos de geometria
 # ---------------------------------------------------------------
+THICKNESS = 1.0           # Espesor unitario (2D): cargas por metro de ancho
 G = 9.81
-RHO_WATER = 1000.0
+rhoAgua = 1000      # Densidad del agua (kg/m3)
  
-HEIGHT = 30.0
-BASE = 18.0
-CREST = 3.0
-FREEBOARD = 2.0
-WATER = HEIGHT - FREEBOARD      # nivel del agua medido desde la base
+H = 30   # Altura de la presa
+b = 18   # Ancho de la base
+c = 3    # Ancho de la cresta
+d = 2    # Altura libre sobre el nivel del agua
+Hagua = H - d   # Nivel del agua medido desde la base
+
 TOL = 1.0e-9
 
-# ETAPA 2: Material con matriz constitutiva D (plane stress)
+# ETAPA 2: Material con matriz constitutiva D - Hormigon H°21 
 # ---------------------------------------------------------------
+E = 21.0e9            # Modulo de elasticidad (Pa)
+nu = 0.2              # Coef de Poisson
+rhoHormigon = 2400  # Densidad (kg/m3)
+
+material = LinearElastic(E, nu, rhoHormigon)
 
 
 # ETAPA 3: Malla y elementos
@@ -34,7 +50,9 @@ TOL = 1.0e-9
 mesh = Mesh()
 mesh.read("meshes/dam_%s.mesh" % ELEMENT)
 mesh.dofs_per_node = Solid2D.dofs_per_node
-n = mesh.number_of_dofs()
+
+n_dofs = mesh.number_of_dofs()
+n_nodes = mesh.number_of_nodes()
 
 elements = []
 for e in range(mesh.number_of_elements()):
@@ -43,39 +61,40 @@ for e in range(mesh.number_of_elements()):
         mesh.connectivity[e],
         mesh,
         mesh.element_material(e),
-        mesh.thickness,
+        THICKNESS,
         mesh.element_types[e],
-        mesh.analysis,
+        FORMULATION
     )
     elements.append(element)
 
-print("\nTipo de Elemento: %s | Nodos: %d | Elementos: %d" % (ELEMENT, n // 2, len(elements)))
-
+print("\nTipo de Elemento: %s | Nodos: %d | Elementos: %d" % (ELEMENT, n_dofs // 2, len(elements)))
+print("\nTipo de Formulacion: %s" % FORMULATION)
 
 # ETAPA 4: Ensamble global de K
 # ---------------------------------------------------------------
-K = DenseMatrix(n)
+K = DenseMatrix(n_dofs)
 for el in elements:
     K.scatter_local_to_global(el)
 
 
 # ETAPA 5: Cargas (peso propio y presion hidrostatica)
 # ---------------------------------------------------------------
-f = numpy.zeros(n)
+f = numpy.zeros(n_dofs)
 
-#Peso propio: b=(0, -rho g) con la rho del material de cada elemento
-assemble_gravity(f, elements, G)
+# Peso propio: fuerza de cuerpo x unidad de volumen b=(0, -rho.g)
+assemble_body_force(f, elements, (0.0, -rhoHormigon * G))
+"""
 # Presion hidrostatica sobre la cara aguas arriba (x = 0), solo bajo el nivel del agua
 
 def on_upstream_face(p, q):
     return (abs(p[0]) < TOL and abs(q[0]) < TOL
-            and p[1] <= WATER + TOL and q[1] <= WATER + TOL)
+            and p[1] <= Hagua + TOL and q[1] <= Hagua + TOL)
  
 def hydrostatic_pressure(x, y):
-    return RHO_WATER * G * (WATER - y)
+    return rhoAgua * G * (Hagua - y)
  
 assemble_pressure(f, elements, on_upstream_face, hydrostatic_pressure)
-
+"""
 # Copias antes de aplicar CB (para autovalores y reacciones)
 K0 = K.values.copy()
 f0 = f.copy()
@@ -84,12 +103,12 @@ f0 = f.copy()
 # ETAPA 6: Condiciones de borde en la base
 # ---------------------------------------------------------------
 fixed = []
-values = []
 
-base_nodes = [k for k in range(n // Solid2D.dofs_per_node) if abs(mesh.node(k).y) < TOL]
+base_nodes = [i for i in range(n_nodes) if abs(mesh.node(i).y) < TOL]
 
 for node in base_nodes:
     for dof in mesh.node_global_dofs(node):
+        fixed.append(dof)
         fixed.append(dof)
         apply_dirichlet_bc(K, f, dof, 0.0)
 
@@ -99,51 +118,72 @@ for node in base_nodes:
 u = solve(K, f)
 
 # --- Autovalores de K reducida (chequeo de estabilidad) ------------------
-free = [d for d in range(n) if d not in fixed]
+free = [d for d in range(n_dofs) if d not in fixed]
 ev = numpy.linalg.eigvalsh(K0[numpy.ix_(free, free)])
 print("\nAutovalor minimo/maximo de K reducida: %.2e (debe ser > 0)" % (ev.min() / ev.max()))
+if ev.min() <= 0:
+    print("Advertencia: matriz K reducida no es definida positiva")
+
+# --- Reacciones en la base: R = K0 u - f0 -------------------------------------------
+R = K0 @ u - f0
 
 
 # ETAPA 8: Postproceso y resultados (reacciones, tensiones, momentos, FS)
 # ---------------------------------------------------------------
-SCALE=2000.0 #factor de escala de la deformación para ParaView
-write_results("results/dam_%s.vtu" % ELEMENT, mesh, elements, u, SCALE)
+ 
+# --- Momento estabilizante -----------------------------
+area = 0.5 * (b+c) * H
+W = rhoHormigon * G * area * THICKNESS
+x_cg = (b**2+b*c+c**2) / (3*(b + c))  # Desde la cara aguas arriba
+M_estabilizante = W * (b - x_cg)      # El peso gira antihorario respecto del pie aguas abajo (b, 0)
 
-#---Tensión principal maxima---
-sigma1= [element_sigma1_max(el,u) for el in elements]
-e_max= int(numpy.argmax(sigma1))
-xc, yc = elements[e_max].X.mean(axis=0)
-print("\nsigma_1 maxima: %.3f MPa en el elemento %d (x = %.1f m, y = %.1f m)"
-      % (max(sigma1) / 1e6, e_max + 1, xc, yc))
-print("Desplazamiento maximo: %.3f mm" % (1e3 * numpy.abs(u).max()))
+# --- Momento desestabilizante -----------------------------
+Fempuje = 0.5 * rhoAgua * G * Hagua**2 * THICKNESS
+Hempuje = Hagua / 3                          # Brazo de palanca del empuje (centroide de la presión)
+M_desestabilizante = Fempuje * Hempuje       # El empuje gira horario (se toma en modulo)
 
-#---Reacciones en la base: R=K0, u-f0----
-R= K0 @ u - f0
-Rx= sum(R[mesh.node_global_dofs(k)[0]] for k in base_nodes)
-Ry= sum(R[mesh.node_global_dofs(k)[1]] for k in base_nodes)
-#Momento analiticos respecto del pie aguas abajo---
-M_reac = sum((BASE - mesh.node(k).x) * R[mesh.node_global_dofs(k)[1]] for k in base_nodes)
-x_R = BASE - M_reac / Ry 
+FS = M_estabilizante / M_desestabilizante
 
-#---Momentos analíticos---
-area = (BASE + CREST) / 2 * HEIGHT
-x_g = (BASE**2 + BASE * CREST + CREST**2) / (3 * (BASE + CREST))
-rho_c = elements[0].material.rho
-W = rho_c * G * area * mesh.thickness
-M_est = W * (BASE - x_g)
+# --- Momento de las reacciones de la base (FEM); Rx no aporta porque esta en y = 0
+M_reactions = 0.0
+for node in base_nodes:
+    M_reactions += (mesh.node(node).x - b) * R[2 * node + 1]
 
-# Empuje del agua: F = rho_w g h^2 / 2, aplicado a h/3 de la base
-F_w = RHO_WATER * G * WATER**2 / 2 * mesh.thickness
-M_des = F_w * WATER / 3
-
-FS = M_est / M_des
+# --- Reacciones totales en la base (FEM) -----------------------------
+Rx = sum(R[2*node] for node in base_nodes)
+Ry = sum(R[2*node+1] for node in base_nodes)
 
 print("\n--- Equilibrio global (por metro de ancho) ---")
-print("Peso W        = %.4f MN    | Ry (FEM) = %.4f MN" % (W / 1e6, Ry / 1e6))
-print("Empuje F      = %.4f MN    | Rx (FEM) = %.4f MN" % (F_w / 1e6, -Rx / 1e6))
-print("M estabilizante   = %.3f MN.m" % (M_est / 1e6))
-print("M desestabilizante = %.3f MN.m" % (M_des / 1e6))
-print("M_est - M_des     = %.3f MN.m | M reacciones (FEM) = %.3f MN.m" % ((M_est - M_des) / 1e6, M_reac / 1e6))
-print("Factor de seguridad al vuelco FS = M_est / M_des = %.3f" % FS)
-print("Resultante vertical a %.2f m del pie aguas abajo (tercio central: %.1f a %.1f m)"
-      % (BASE - x_R, BASE / 3, 2 * BASE / 3))
+print("  Peso W        = %.4f MN   | Ry (FEM) = %.4f MN" % (W / 1e6, Ry / 1e6))
+print("  Empuje F      = %.4f MN   | Rx (FEM) = %.4f MN" % (Fempuje / 1e6, -Rx / 1e6))
+print("  M Estabilizante   W*(B-x_cg)    = %.6e N m" % M_estabilizante)
+print("  M Desestabilizante  F*Hagua/3   = %.6e N m" % M_desestabilizante)
+print("  Factor de seguridad al vuelco   = %.3f" % FS)
+print("  M Neto (estab - desestab)       = %.6e N m" % (M_estabilizante - M_desestabilizante))
+print("  M Momento de las reacciones FEM = %.6e N m (debe ser el neto, con signo contrario)" % M_reactions)
+
+# --- Tensión principal máxima (FEM) ---------------------------------------
+sigma1 = []
+sigma2 = []
+sigma_vm = []
+
+for el in elements:
+    sigma1.append(el.principal_stress(u)[0])
+    sigma2.append(el.principal_stress(u)[1])
+    sigma_vm.append(el.vonMises_stress(u) )
+
+e_max = int(numpy.argmax(sigma1))         # índice del elemento crítico
+xc, yc = elements[e_max].X.mean(axis=0)   # Coordenadas del centroide del elemento crítico
+
+print("\n--- Tensión principal máxima ---")
+print("  sigma_1 max = %.3f MPa" % (max(sigma1) / 1e6))
+print("  sigma_2 min = %.3f MPa" % (min(sigma2) / 1e6))
+print("  Von Mises max = %.3f MPa" % (max(sigma_vm) / 1e6))
+print("  Elemento crítico: %d" % (e_max + 1))
+print("  Ubicación: x = %.2f m, y = %.2f m" % (xc, yc))
+
+# --- Desplazamiento máximo -------------------------------------------------
+umax = numpy.abs(u).max()
+print("  Desplazamiento máximo = %.3f mm" % (1e3 * umax))
+
+write_results("results/dam_%s.vtu" % ELEMENT, mesh, elements, u, SCALE)   # Arma el archivo VTU para ParaView con la deformada y tensiones

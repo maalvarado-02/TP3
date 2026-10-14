@@ -4,18 +4,27 @@ from source.mesh.mesh import Mesh
 from source.materials.linear_elastic import LinearElastic
 from source.elements.solid2d import Solid2D
 from source.systems.dense_matrix import DenseMatrix
-from source.output.paraview import write_results
 from source.systems.boundary_conditions import apply_dirichlet_bc
 from source.solvers.linear import solve
+from source.output.paraview import write_results
 
 THICKNESS = 1.0   # espesor unitario (2D)
 
-# Elemento a probar:
-ELEMENT = "Q8"          # "Q4", "T3", "T6" o "Q8"
+# --- Elemento a probar ---------------------------------------------------
+ELEMENT = "Q4"          # "Q4", "T3", "T6" o "Q8"
+
+# --- Tipo de formulación constitutiva ------------------------------------
+FORMULATION = "plane_strain"     # "plane_stress" o "plane_strain"
+
+# --- Factor de escala de la deformada para ParaView/graficos -------------
+ # scale = 0 (geometría original sin deformación)
+ # scale = 1 (deformada real (x + u))
+ # scale > 1 (la deformada se exagera para visualizarla mejor)
+SCALE = 100
 
 # --- Material ------------------------------------------------------------
-E = 200.0e9
-nu = 0.2
+E = 21.0e9            # Modulo de elasticidad (Pa)
+nu = 0.2              # Coef de Poisson
 material = LinearElastic(E, nu)
 
 # --- Leer malla ----------------------------------------------------------
@@ -34,11 +43,13 @@ for e in range(mesh.number_of_elements()):
             mesh,
             material,
             THICKNESS,
-            mesh.element_types[e]
+            mesh.element_types[e],
+            FORMULATION
         )
     )
 
 print("\nTipo de Elemento: %s | Nodos: %d | Elementos: %d" % (ELEMENT, n // 2, len(elements)))
+print("\nTipo de Formulacion: %s" % FORMULATION)
 
 # --- Ensamble global -----------------------------------------------------
 K = DenseMatrix(n)
@@ -100,32 +111,29 @@ print("Reaccion x nodo 4: %.4e (esperada %.4e)" % (R[dofs(4)[0]], -2 * r * F))
 
 # --- Tension sigma_x en esquinas y puntos de Gauss ---------------------------
 def sigma_x(el, xi, eta):
-    B, detJ = el.B_and_detJ(xi, eta)
-    ue = numpy.array([u[d] for d in el.global_dofs()])
-    return (el.D @ (B @ ue))[0]
+    return el.stress_at(xi, eta, u)[0]   # componente σxx
 
-sigma_exact = 2 * F / (H * THICKNESS)
 
-print("\nsigma_x exacta = 2F/(H t) = %.6e Pa" % sigma_exact)
-print(" elem        esquinas (min .. max)                 Gauss (min .. max)")
+print("\n Elem        Esquinas (min .. max)                 Gauss (min .. max)")
 corner_all = []
 gauss_all = []
 for el in elements:
-    corner = [sigma_x(el, xi, eta) for xi, eta in el.ref.node_coords]
-    gauss = [sigma_x(el, xi, eta) for xi, eta in el.ref.gauss_rule()[0]]
+    corner = [sigma_x(el, xi, eta) for xi, eta in el.ref.node_coords]    # Tensiones en esquinas del elemento
+    gauss = [sigma_x(el, xi, eta) for xi, eta in el.ref.gauss_rule()[0]] # Tensiones en puntos de Gauss
     corner_all += corner
     gauss_all += gauss
-    print("  %d     %.9e .. %.9e   %.9e .. %.9e"
-          % (el.global_id, min(corner), max(corner), min(gauss), max(gauss)))
+    print("  %d     %.9e .. %.9e   %.9e .. %.9e" % (el.global_id, min(corner), max(corner), min(gauss), max(gauss)))
+
+
+sigma_exact = 2 * F / (H * THICKNESS)
+print("\nsigma_x exacta = 2F/(H t) = %.6e Pa" % sigma_exact)
 
 TOL = 1.0e-9
 values_x = numpy.array(corner_all + gauss_all)
-spread = (values_x.max() - values_x.min()) / sigma_exact
-error = abs(values_x - sigma_exact).max() / sigma_exact
-print("\ndispersion relativa de sigma_x en el parche: %.2e" % spread)
-print("error relativo respecto de 2F/(H t):          %.2e" % error)
-print("sigma_x constante y exacta:",
-      "PASA" if (error < TOL and ev.min() > 0.0) else "FALLA")
+error = abs(values_x - sigma_exact).max() / sigma_exact  # Error relativo respecto de la tension exacta
+print("Error relativo respecto de 2F/(H t): %.2e" % error)
+
+print("sigma_x constante y exacta:", "PASA" if (error < TOL and ev.min() > 0.0) else "FALLA")
 
 # --- Exportar resultados -------------------------------------------------
-write_results("results/patch%s_sigma_x.vtu" % ELEMENT, mesh, elements, u)
+write_results("results/patch%s_sigma_x.vtu" % ELEMENT, mesh, elements, u, SCALE)   # Arma el archivo VTU para ParaView con la deformada y tensiones
