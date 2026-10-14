@@ -19,7 +19,6 @@ class Solid2D:
         self.material = material
         self.thickness = thickness
         self.ref = reference_element(element_type)
-
         if len(node_global_ids) != self.ref.number_of_nodes():
             raise ValueError("Número incorrecto de nodos para " + element_type)
 

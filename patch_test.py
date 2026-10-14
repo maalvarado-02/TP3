@@ -20,12 +20,7 @@ FORMULATION = "plane_strain"     # "plane_stress" o "plane_strain"
  # scale = 0 (geometría original sin deformación)
  # scale = 1 (deformada real (x + u))
  # scale > 1 (la deformada se exagera para visualizarla mejor)
-SCALE = 100
-
-# --- Material ------------------------------------------------------------
-E = 21.0e9            # Modulo de elasticidad (Pa)
-nu = 0.2              # Coef de Poisson
-material = LinearElastic(E, nu)
+SCALE = 2000
 
 # --- Leer malla ----------------------------------------------------------
 mesh = Mesh()
@@ -41,12 +36,13 @@ for e in range(mesh.number_of_elements()):
             mesh.element_global_ids[e],
             mesh.connectivity[e],
             mesh,
-            material,
+            mesh.element_material(e),
             THICKNESS,
             mesh.element_types[e],
             FORMULATION
         )
     )
+
 
 print("\nTipo de Elemento: %s | Nodos: %d | Elementos: %d" % (ELEMENT, n // 2, len(elements)))
 print("\nTipo de Formulacion: %s" % FORMULATION)
@@ -84,10 +80,10 @@ for a, b, c in [(1, 4, 7), (3, 6, 9)]:
         raise ValueError("Bordes laterales deben tener nodos equiespaciados")
 
 # --- Condiciones de borde  ---------------------------------------
-fixed = []
+fixed = set()
 
-fixed += dofs(1) # nodo 1 fijo: ux = 0, uy = 0
-fixed.append(dofs(4)[0]) # nodo 4 desliza en y: ux = 0
+fixed.update(dofs(1)) # nodo 1 fijo: ux = 0, uy = 0
+fixed.add(dofs(4)[0]) # nodo 4 desliza en y: ux = 0
 
 # --- Copias sin condiciones de borde (para autovalores y reacciones) ----
 K0 = K.values.copy()

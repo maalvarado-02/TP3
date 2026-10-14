@@ -8,6 +8,7 @@ from source.systems.loads import assemble_body_force, assemble_pressure
 from source.systems.boundary_conditions import apply_dirichlet_bc
 from source.solvers.linear import solve
 from source.output.paraview import write_results
+from make_dam_mesh import make_dam_mesh
 
 
 # --- Elemento de la malla  -----------------------------------------------
@@ -16,11 +17,19 @@ ELEMENT = "Q4"          # "Q4", "T3", "T6" o "Q8"
 # --- Tipo de formulación constitutiva ------------------------------------
 FORMULATION = "plane_strain"     # "plane_stress" o "plane_strain"
 
+# --- Condicion de borde en la base --------------------------------------
+BASE_BC = "fixed"    # "fixed" (empotrada, Dirichlet) o "robin" (resortes de Winkler)
+
 # --- Factor de escala de la deformada para ParaView/graficos -------------
  # scale = 0 (geometría original sin deformación)
  # scale = 1 (deformada real (x + u))
  # scale > 1 (la deformada se exagera para visualizarla mejor)
 SCALE = 100
+
+# Refinacion de la malla
+nx=10
+ny=20
+ny_top=1
 
 # ETAPA 1: Datos de geometria
 # ---------------------------------------------------------------
@@ -32,6 +41,7 @@ H = 30   # Altura de la presa
 b = 18   # Ancho de la base
 c = 3    # Ancho de la cresta
 d = 2    # Altura libre sobre el nivel del agua
+t = 0    # Talud (upstream_batter)
 Hagua = H - d   # Nivel del agua medido desde la base
 
 TOL = 1.0e-9
@@ -47,6 +57,17 @@ material = LinearElastic(E, nu, rhoHormigon)
 
 # ETAPA 3: Malla y elementos
 # ---------------------------------------------------------------
+mesh_file = make_dam_mesh(   # Crea la malla
+    element=ELEMENT,
+    nx=nx,
+    ny=ny,
+    ny_top=ny_top,
+    height=H,
+    base=b,
+    crest=c,
+    freeboard=d,
+    upstream_batter=t)
+
 mesh = Mesh()
 mesh.read("meshes/dam_%s.mesh" % ELEMENT)
 mesh.dofs_per_node = Solid2D.dofs_per_node
@@ -69,6 +90,8 @@ for e in range(mesh.number_of_elements()):
 
 print("\nTipo de Elemento: %s | Nodos: %d | Elementos: %d" % (ELEMENT, n_dofs // 2, len(elements)))
 print("\nTipo de Formulacion: %s" % FORMULATION)
+print("Condicion de borde en la base: %s" % BASE_BC)
+
 
 # ETAPA 4: Ensamble global de K
 # ---------------------------------------------------------------
@@ -100,16 +123,29 @@ f0 = f.copy()
 
 # ETAPA 6: Condiciones de borde en la base
 # ---------------------------------------------------------------
-fixed = []
+fixed = set()
 
 base_nodes = [i for i in range(n_nodes) if abs(mesh.node(i).y) < TOL]
 
-for node in base_nodes:
-    for dof in mesh.node_global_dofs(node):
-        fixed.append(dof)
-        fixed.append(dof)
-        apply_dirichlet_bc(K, f, dof, 0.0)
-
+if BASE_BC == "fixed":      # Empotrada: u = 0 en los nodos de la base
+    for node in base_nodes:
+        for dof in mesh.node_global_dofs(node):
+            fixed.add(dof)
+            apply_dirichlet_bc(K, f, dof, 0.0)
+    K_check = K0
+"""
+KN = 1.0e9               # Rigidez normal de la fundacion (Pa/m), solo para "robin"
+KT = 1.0e9               # Rigidez tangencial de la fundacion (Pa/m), solo para "robin"
+elif BASE_BC == "robin":    # Robin: resortes sobre las aristas de la base, no se fija ningun GDL
+    def on_base(p, q):
+        return abs(p[1]) < TOL and abs(q[1]) < TOL
+ 
+    assemble_robin(K, elements, on_base, KN, KT)
+    K_check = K.values.copy()   # K con resortes (K0 queda sin resortes: R = K0 u - f0 = -Ks u)
+ 
+else:
+    raise ValueError("BASE_BC desconocida: " + BASE_BC)
+"""
 
 # ETAPA 7: Resolver sistema (reducido)
 # ---------------------------------------------------------------

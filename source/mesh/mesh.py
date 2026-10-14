@@ -27,7 +27,6 @@ class Mesh:
         for raw_line in file:
             line = raw_line.split("#")[0]
             line = line.strip()
-
             if line != "":
                 lines.append(line)
 
@@ -80,25 +79,21 @@ class Mesh:
             line_number += 1
 
             element_global_id = int(values[0]) - 1
-            family = values[1]
-            order = int(values[2])
-            material_id = int(values[3])
+            element_type = values[1]
+            material_id = int(values[2])
 
             if material_id not in self.materials:   # Chequeo: material asignado existe
                 raise ValueError(f"Material ID {material_id} no definido")
 
-            if (family, order) not in ELEMENT_TYPES:   # Chequeo: tipo de elemento válido
+            if element_type not in set(ELEMENT_TYPES.values()):   # Chequeo: tipo de elemento válido
                 raise ValueError("Tipo de elemento desconocido")
             
-            element_type = ELEMENT_TYPES[(family, order)]
-            
             element_conn = []
-            for j in range(4, len(values)):
+            for j in range(3, len(values)):
                 element_conn.append(int(values[j]) - 1)
             
             self.element_global_ids.append(element_global_id)
             self.element_types.append(element_type)
-            self.element_materials.append(material_id)
             self.element_materials.append(material_id)
             self.connectivity.append(element_conn)
 
@@ -120,7 +115,6 @@ class Mesh:
 
     def node_global_dofs(self, node_global_id):
         dofs = []
-
         for i in range(self.dofs_per_node):
             dofs.append(node_global_id * self.dofs_per_node + i)
 

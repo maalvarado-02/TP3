@@ -14,10 +14,13 @@
 #     nodo 22: -4/3 F
 #     nodo 23: 4/3 F
 
-# n_nodes n_elements dim
-25 8 2
+# n_nodes | n_elements | dim | n_materials
+25 8 2 1
 
-# node_number x y
+# material_id | type | E | nu | rho
+1 linear_elastic 2.1e+10 0.2 2400
+
+# node_number | x | y
 1 0.0000 0.0000
 2 1.2000 0.0000
 3 2.0000 0.0000
@@ -44,12 +47,12 @@
 24 1.6000 1.5200
 25 1.5160 2.0000
 
-# element_number element_type connectivity
-1 TRI6  1 2 5 10 11 12
-2 TRI6  1 5 4 12 13 14
-3 TRI6  2 3 6 15 16 17
-4 TRI6  2 6 5 17 18 11
-5 TRI6  4 5 8 13 19 20
-6 TRI6  4 8 7 20 21 22
-7 TRI6  5 6 9 18 23 24
-8 TRI6  5 9 8 24 25 19
+# element_number | element_type | material_id | connectivity
+1 TRI6  1 1 2 5 10 11 12
+2 TRI6  1 1 5 4 12 13 14
+3 TRI6  1 2 3 6 15 16 17
+4 TRI6  1 2 6 5 17 18 11
+5 TRI6  1 4 5 8 13 19 20
+6 TRI6  1 4 8 7 20 21 22
+7 TRI6  1 5 6 9 18 23 24
+8 TRI6  1 5 9 8 24 25 19
