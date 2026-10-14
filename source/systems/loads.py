@@ -1,5 +1,7 @@
 import numpy
 
+from source.elements.quadrature import line_rule
+
 # Aristas de cada tipo (indices locales, sentido antihorario):
 # (esquina_a, esquina_b) (T3 y Q4) o  (esquina_a, esquina_b, nodo_de_lado) (T6 y Q8)
 EDGES = {
@@ -25,7 +27,6 @@ def body_force_vector(element, b):  #Vector local de fuerzas de cuerpo. b = (bx,
             fe[2 * a + 1] += N[a] * b[1] * detJ * element.thickness * w
     return fe
     
-
 def assemble_body_force(f, elements, b):
     for element in elements:
         fe = body_force_vector(element, b)
@@ -33,47 +34,64 @@ def assemble_body_force(f, elements, b):
 
         for i in range(len(dofs)):
             f[dofs[i]] += fe[i]
-def assemble_gravity(f, elements, g):
-    for element in elements:
-        b=(0.0, -element.material.rho*g)
-        fe= body_force_vector(element, b)
-        dofs= element.global_dofs()
-        for i in range(len(dofs)):
-            f[dofs[i]] += fe[i]
 
-def edge_pressure_vector (element, edge, pressure, n_gauss=3):
-    nn=element.ref.number_of_nodes()
-    fe=numpy.zeros(2*nn)
-    X= element.X[list(edge)]
-    t_points, t_weights=numpy.polynomial.legendre.leggauss(n_gauss)
-    for t, w in zip(t_points, t_weights):
-        if len(edge)==2:
-            N=numpy.array([(1-t)/2, (1+t)/2])
-            dN= numpy.array([-0.5,0.5])
-        else:
-            N= numpy.array([t*(t-1)/2, t*(t+1)/2, 1- t**2])
-            dN=numpy.array([t-0.5, t+0.5, -2*t])
 
-        x, y= N @ X
-        dx, dy= dN @ X
-        p= pressure(x,y)
-        tx= -p*dy
-        ty=p*dx
+# Presion sobre aristas (presion hidrostatica)
+# ---------------------------------------------------------------
+
+def edge_shape(number_of_edge_nodes, s):  #Funciones de forma 1D sobre una arista, coord local s en [-1, 1].
+    if number_of_edge_nodes == 2:   # Orden: [a, b]
+        Na = 0.5 * (1 - s)
+        Nb = 0.5 * (1 + s)
+        N = numpy.array([Na, Nb])
+        dNa = -0.5
+        dNb = 0.5
+        dN = numpy.array([dNa, dNb])
+    else:  # Orden: [a, b, (lado)]
+        Na = 0.5 * s * (s - 1)
+        Nb = 0.5 * s * (s + 1)
+        Nlado = 1 - s * s
+        N = numpy.array([Na, Nb, Nlado])
+        dNa = s - 0.5
+        dNb = s + 0.5
+        dNlado = -2 * s
+        dN = numpy.array([dNa, dNb, dNlado])
+    return N, dN
+
+def pressure_vector(element, edge, pressure):   # Vector local de una arista cargada con presion normal.
+    # pressure(x, y) > 0 comprime: la traccion es -p * n, con n la normal exterior.
+    nn = element.ref.number_of_nodes()
+    fe = numpy.zeros(2 * nn)
+
+    s_points, s_weights = line_rule(3)
+    for s, w in zip(s_points, s_weights):
+        N, dN = edge_shape(len(edge), s)
+
+        x = numpy.zeros(2)
+        tangent = numpy.zeros(2)
         for k, a in enumerate(edge):
-            fe[2*a] += N[k]*tx*element.thickness*w
-            fe[2*a+1] += N[k]*ty*element.thickness*w
+            x += N[k] * element.X[a]
+            tangent += dN[k] * element.X[a]
+
+        length = numpy.linalg.norm(tangent)
+        normal = numpy.array([tangent[1], -tangent[0]]) / length   # exterior (antihorario)
+        p = pressure(x[0], x[1])
+
+        for k, a in enumerate(edge):
+            fe[2 * a] += N[k] * (-p * normal[0]) * length * element.thickness * w
+            fe[2 * a + 1] += N[k] * (-p * normal[1]) * length * element.thickness * w
+
     return fe
 
-def assemble_pressure(f, elements, on_edge, pressure):
+def assemble_pressure(f, elements, on_edge, pressure): # Suma la presion en todas las aristas donde on_edge(p, q) sea verdadero (p y q: coordenadas de las dos esquinas de la arista).
     for element in elements:
         for edge in EDGES[element.ref.name]:
-            p=element.X[edge[0]]
-            q=element.X[edge[1]]
-            if not on_edge(p,q):
-                continue
+            p = element.X[edge[0]]
+            q = element.X[edge[1]]
 
-            fe=edge_pressure_vector(element, edge, pressure)
-            dofs=element.global_dofs()
-            for i in range(len(dofs)):
-                f[dofs[i]] += fe[i]
-                
+            if on_edge(p, q):
+                fe = pressure_vector(element, edge, pressure)
+                dofs = element.global_dofs()
+
+                for i in range(len(dofs)):
+                    f[dofs[i]] += fe[i]

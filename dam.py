@@ -4,10 +4,10 @@ from source.mesh.mesh import Mesh
 from source.materials.linear_elastic import LinearElastic
 from source.elements.solid2d import Solid2D
 from source.systems.dense_matrix import DenseMatrix
-from source.systems.loads import assemble_gravity, assemble_pressure
+from source.systems.loads import assemble_body_force, assemble_pressure
 from source.systems.boundary_conditions import apply_dirichlet_bc
 from source.solvers.linear import solve
-from source.output.paraview import write_results, element_sigma1_max
+from source.output.paraview import write_results
 
 
 # --- Elemento de la malla  -----------------------------------------------
@@ -83,18 +83,16 @@ f = numpy.zeros(n_dofs)
 
 # Peso propio: fuerza de cuerpo x unidad de volumen b=(0, -rho.g)
 assemble_body_force(f, elements, (0.0, -rhoHormigon * G))
-"""
-# Presion hidrostatica sobre la cara aguas arriba (x = 0), solo bajo el nivel del agua
 
+# Presion hidrostatica sobre la cara aguas arriba (x = 0), solo bajo el nivel del agua
 def on_upstream_face(p, q):
-    return (abs(p[0]) < TOL and abs(q[0]) < TOL
-            and p[1] <= Hagua + TOL and q[1] <= Hagua + TOL)
+    return (abs(p[0]) < TOL and abs(q[0]) < TOL and p[1] <= Hagua + TOL and q[1] <= Hagua + TOL)
  
 def hydrostatic_pressure(x, y):
     return rhoAgua * G * (Hagua - y)
- 
+
 assemble_pressure(f, elements, on_upstream_face, hydrostatic_pressure)
-"""
+
 # Copias antes de aplicar CB (para autovalores y reacciones)
 K0 = K.values.copy()
 f0 = f.copy()
