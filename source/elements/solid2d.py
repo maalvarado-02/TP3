@@ -19,6 +19,7 @@ class Solid2D:
         self.material = material
         self.thickness = thickness
         self.ref = reference_element(element_type)
+        self.formulation = formulation
         if len(node_global_ids) != self.ref.number_of_nodes():
             raise ValueError("Número incorrecto de nodos para " + element_type)
 
@@ -93,12 +94,20 @@ class Solid2D:
         stresses = self.stress_at_gauss(u)
         return sum(stresses) / len(stresses)
 
-    def principal_stress(self, u):   # Tensiones principales del elemento
+    def principal_stress(self, u):   # Tensiones principales del elemento (s1 >= s2 >= s3) con szz incluida
         sxx, syy, txy = self.average_stress(u)
+        szz = self.sigma_zz(sxx, syy)
         s1 = 0.5*(sxx + syy) + numpy.sqrt(0.25*(sxx - syy)**2 + txy**2)
         s2 = 0.5*(sxx + syy) - numpy.sqrt(0.25*(sxx - syy)**2 + txy**2)
-        return numpy.array([s1, s2])
+        return numpy.array([s1, s2, szz])
 
     def vonMises_stress(self, u):   # Tensión equivalente de Von Mises del elemento
         sxx, syy, txy = self.average_stress(u)
-        return numpy.sqrt(sxx**2 - sxx*syy + syy**2 + 3*txy**2)
+        szz = self.sigma_zz(sxx, syy)
+        s_vm = numpy.sqrt(0.5 * ((sxx - syy)**2 + (syy - szz)**2 + (szz - sxx)**2) + 3 * txy**2)
+        return s_vm
+
+    def sigma_zz(self, sxx, syy): # plane_strain: szz = nu (sxx + syy);  plane_stress: szz = 0
+        if self.formulation == "plane_strain":
+            return self.material.nu * (sxx + syy)
+        return 0.0

@@ -1,9 +1,8 @@
 import numpy
 
 from source.mesh.mesh import Mesh
-from source.materials.linear_elastic import LinearElastic
 from source.elements.solid2d import Solid2D
-from source.systems.dense_matrix import DenseMatrix
+from source.systems.matrix import DenseMatrix
 from source.systems.boundary_conditions import apply_dirichlet_bc
 from source.solvers.linear import solve
 from source.output.paraview import write_results
@@ -20,7 +19,7 @@ FORMULATION = "plane_strain"     # "plane_stress" o "plane_strain"
  # scale = 0 (geometría original sin deformación)
  # scale = 1 (deformada real (x + u))
  # scale > 1 (la deformada se exagera para visualizarla mejor)
-SCALE = 2000
+SCALE = 100
 
 # --- Leer malla ----------------------------------------------------------
 mesh = Mesh()

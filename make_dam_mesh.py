@@ -19,7 +19,6 @@ def dam_mesh(element, nx, ny, ny_top, height, base, crest, freeboard, upstream_b
     raise ValueError("Elemento desconocido: %s (usar T3, T6, Q4 o Q8)" %element)
   
   water = height - freeboard
-  quadratic = element in ("T6", "Q8")
 
   def x_left(y):
     return upstream_batter * (1 - y/height)
@@ -107,14 +106,17 @@ def make_dam_mesh (element="Q4", nx=4, ny=8, ny_top=1, filename=None, height=HEI
   print("%s: %d nodos, %d elementos -> %s" %(element_name, len(nodes), len(elements), filename))
   return filename
 
+# Crea todas las mallas en simultaneo (en vez de llamarlo desde dam.py)
 """
 if __name__ == "__main__":
   if len(sys.argv)>1:
     element=sys.argv[1]
-    nx=int(sys.argv[2]) if len(sys.argv)> 2 else 4
-    ny= int(sys.argv[3]) if len(sys.argv)> 3 else 8
-    make_dam_mesh(element, nx, ny)
+    nx = int(sys.argv[2]) if len(sys.argv) > 2 else 4
+    ny = int(sys.argv[3]) if len(sys.argv) > 3 else 8
+    make_dam_mesh(element, nx, ny, ny_top=1, filename=None, height=HEIGHT, base=BASE, crest=CREST,
+                  freeboard=FREEBOARD, upstream_batter=UPSTREAM_BATTER)
   else:
     for element in ("T3", "T6", "Q4", "Q8"):
-      make_dam_mesh(element, nx=4, ny=8)
+      make_dam_mesh (element, nx=4, ny=8, ny_top=1, filename=None, height=HEIGHT, base=BASE, crest=CREST,
+                  freeboard=FREEBOARD, upstream_batter=UPSTREAM_BATTER)
 """

@@ -40,7 +40,7 @@ class Tri3(ReferenceElement):   # Elemento triangular lineal de 3 nodos
         dN = numpy.array([dN1, dN2, dN3])
         return N, dN
 
-    def gauss_rule(self):
+    def gauss_rule(self):   # Regla de Gauss de 1 punto
         return triangle_rule(1)
 
 
@@ -69,7 +69,7 @@ class Tri6(ReferenceElement):   # Elemento triangular cuadratico de 6 nodos
         dN = numpy.array([dN1, dN2, dN3, dN4, dN5, dN6])
         return N, dN
 
-    def gauss_rule(self):
+    def gauss_rule(self):   # Regla de Gauss de 3 puntos
         return triangle_rule(3)
 
 
@@ -91,7 +91,7 @@ class Quad4(ReferenceElement):   # Elemento cuadrilatero bilineal de 4 nodos
         dN = numpy.array([dN1, dN2, dN3, dN4])
         return N, dN
 
-    def gauss_rule(self):
+    def gauss_rule(self):   # Regla de Gauss de 2x2 puntos
         return quad_rule(2)
 
 
@@ -122,7 +122,7 @@ class Quad8(ReferenceElement):   # Elemento cuadrilatero cuadratico de 8 nodos
         dN = numpy.array([dN1, dN2, dN3, dN4, dN5, dN6, dN7, dN8])
         return N, dN
 
-    def gauss_rule(self):
+    def gauss_rule(self):   # Regla de Gauss de 3x3 puntos
         return quad_rule(3)
 
 

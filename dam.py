@@ -3,10 +3,10 @@ import numpy
 from source.mesh.mesh import Mesh
 from source.materials.linear_elastic import LinearElastic
 from source.elements.solid2d import Solid2D
-from source.systems.dense_matrix import DenseMatrix
+from source.systems.matrix import SparseMatrix
 from source.systems.loads import assemble_body_force, assemble_pressure
-from source.systems.boundary_conditions import apply_dirichlet_bc
-from source.solvers.linear import solve
+from source.systems.boundary_conditions import apply_dirichlet_bc, apply_robin_bc
+from source.solvers.linear import solve_sparse
 from source.output.paraview import write_results
 from make_dam_mesh import make_dam_mesh
 
@@ -24,12 +24,12 @@ BASE_BC = "fixed"    # "fixed" (empotrada, Dirichlet) o "robin" (resortes de Win
  # scale = 0 (geometría original sin deformación)
  # scale = 1 (deformada real (x + u))
  # scale > 1 (la deformada se exagera para visualizarla mejor)
-SCALE = 100
+SCALE = 1000
 
 # Refinacion de la malla
-nx=10
-ny=20
-ny_top=1
+nx = 20
+ny = 40    # Hasta el nivel del agua
+ny_top = 2 # Por encima del nivel del agua
 
 # ETAPA 1: Datos de geometria
 # ---------------------------------------------------------------
@@ -58,15 +58,15 @@ material = LinearElastic(E, nu, rhoHormigon)
 # ETAPA 3: Malla y elementos
 # ---------------------------------------------------------------
 mesh_file = make_dam_mesh(   # Crea la malla
-    element=ELEMENT,
-    nx=nx,
-    ny=ny,
-    ny_top=ny_top,
-    height=H,
-    base=b,
-    crest=c,
-    freeboard=d,
-    upstream_batter=t)
+    element = ELEMENT,
+    nx = nx,
+    ny = ny,
+    ny_top = ny_top,
+    height = H,
+    base = b,
+    crest = c,
+    freeboard = d,
+    upstream_batter = t)
 
 mesh = Mesh()
 mesh.read("meshes/dam_%s.mesh" % ELEMENT)
@@ -84,8 +84,7 @@ for e in range(mesh.number_of_elements()):
         mesh.element_material(e),
         THICKNESS,
         mesh.element_types[e],
-        FORMULATION
-    )
+        FORMULATION)
     elements.append(element)
 
 print("\nTipo de Elemento: %s | Nodos: %d | Elementos: %d" % (ELEMENT, n_dofs // 2, len(elements)))
@@ -93,9 +92,9 @@ print("\nTipo de Formulacion: %s" % FORMULATION)
 print("Condicion de borde en la base: %s" % BASE_BC)
 
 
-# ETAPA 4: Ensamble global de K
+# ETAPA 4: Ensamble global de K (sparse matrix)
 # ---------------------------------------------------------------
-K = DenseMatrix(n_dofs)
+K = SparseMatrix(n_dofs)
 for el in elements:
     K.scatter_local_to_global(el)
 
@@ -124,8 +123,11 @@ f0 = f.copy()
 # ETAPA 6: Condiciones de borde en la base
 # ---------------------------------------------------------------
 fixed = set()
+base_nodes = [i for i in range(n_nodes) if abs(mesh.node(i).y) < TOL]   # Nodos de la base (y = 0)
 
-base_nodes = [i for i in range(n_nodes) if abs(mesh.node(i).y) < TOL]
+# Rigidez asociada al piso para CB Robin (si los valores de K son chicos reducir SCALE)
+KN = 1.0e12         # Rigidez normal de la fundacion (Pa/m)
+KT = 1.0e12         # Rigidez tangencial de la fundacion (Pa/m)
 
 if BASE_BC == "fixed":      # Empotrada: u = 0 en los nodos de la base
     for node in base_nodes:
@@ -133,27 +135,26 @@ if BASE_BC == "fixed":      # Empotrada: u = 0 en los nodos de la base
             fixed.add(dof)
             apply_dirichlet_bc(K, f, dof, 0.0)
     K_check = K0
-"""
-KN = 1.0e9               # Rigidez normal de la fundacion (Pa/m), solo para "robin"
-KT = 1.0e9               # Rigidez tangencial de la fundacion (Pa/m), solo para "robin"
+
 elif BASE_BC == "robin":    # Robin: resortes sobre las aristas de la base, no se fija ningun GDL
-    def on_base(p, q):
+    def on_base(p, q):   # Aristas de la base (y = 0)
         return abs(p[1]) < TOL and abs(q[1]) < TOL
- 
-    assemble_robin(K, elements, on_base, KN, KT)
+    
+    apply_robin_bc(K, elements, on_base, KN, KT)
     K_check = K.values.copy()   # K con resortes (K0 queda sin resortes: R = K0 u - f0 = -Ks u)
  
 else:
     raise ValueError("BASE_BC desconocida: " + BASE_BC)
-"""
+
 
 # ETAPA 7: Resolver sistema (reducido)
 # ---------------------------------------------------------------
-u = solve(K, f)
+u = solve_sparse(K, f)
 
 # --- Autovalores de K reducida (chequeo de estabilidad) ------------------
 free = [d for d in range(n_dofs) if d not in fixed]
-ev = numpy.linalg.eigvalsh(K0[numpy.ix_(free, free)])
+K_free = K_check[numpy.ix_(free, free)].toarray()
+ev = numpy.linalg.eigvalsh(K_free)
 print("\nAutovalor minimo/maximo de K reducida: %.2e (debe ser > 0)" % (ev.min() / ev.max()))
 if ev.min() <= 0:
     print("Advertencia: matriz K reducida no es definida positiva")
@@ -220,4 +221,4 @@ print("  Ubicación: x = %.2f m, y = %.2f m" % (xc, yc))
 umax = numpy.abs(u).max()
 print("  Desplazamiento máximo = %.3f mm" % (1e3 * umax))
 
-write_results("results/dam_%s.vtu" % ELEMENT, mesh, elements, u, SCALE)   # Arma el archivo VTU para ParaView con la deformada y tensiones
+write_results("results/dam_%s_%s.vtu" % (ELEMENT, BASE_BC) , mesh, elements, u, SCALE)   # Arma el archivo VTU para ParaView con la deformada y tensiones
