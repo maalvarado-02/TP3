@@ -139,4 +139,12 @@ print("%-12s %8s %8s %7s %12s %12s %8s %10s %10s %8s" % ("", "[m2]", "", "", "[M
 for r in rows:
   name, area, darea, FS, M_neto, M_reac, e, L, sigma1, umax=r
   print("%-12s %8.1f %8.1f %7.3f %12.3f %12.3f %8.2f %4.1f-%-5.1f %10.3f %8.3f" % (name, area, darea, FS, M_neto / 1e6, M_reac / 1e6, e, L / 3, 2 * L / 3,sigma1 / 1e6, 1e3 * umax))
-  
+
+#--- Tabla con resultados en formato CSV ----
+with open("results/geometry_study.csv", "w") as file:
+    file.write("geometria,area_m2,darea_pct,FS,Mneto_MNm,Mreac_MNm,e_m,L_m,sigma1_MPa,umax_mm\n")
+    for r in rows:
+        name, area, darea, FS, M_neto, M_reac, e, L, sigma1, umax = r
+        file.write("%s,%.2f,%.2f,%.4f,%.4f,%.4f,%.3f,%.2f,%.4f,%.4f\n" % (
+            name, area, darea, FS, M_neto / 1e6, M_reac / 1e6, e, L, sigma1 / 1e6, 1e3 * umax))
+print("\nTabla guardada en results/geometry_study.csv")
