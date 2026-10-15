@@ -195,7 +195,7 @@ print("  M Estabilizante   W*(B-x_cg)    = %.6e N m" % M_estabilizante)
 print("  M Desestabilizante  F*Hagua/3   = %.6e N m" % M_desestabilizante)
 print("  Factor de seguridad al vuelco   = %.3f" % FS)
 print("  M Neto (estab - desestab)       = %.6e N m" % (M_estabilizante - M_desestabilizante))
-print("  M Momento de las reacciones FEM = %.6e N m (debe ser el neto, con signo contrario)" % M_reactions)
+print("  M Momento de las reacciones FEM = %.6e N m (debe ser -Mneto)" % M_reactions)
 
 # --- Tensión principal máxima (FEM) ---------------------------------------
 sigma1 = []

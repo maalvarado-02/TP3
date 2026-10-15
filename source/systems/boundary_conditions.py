@@ -1,10 +1,9 @@
 import numpy
-from source.elements.quadrature import line_rule
-from source.systems.loads import EDGES, edge_shape
 
 # Aplica las condiciones de borde (Dirichlet o Robin) a los nodos que se pasan
 
 # Condicion de borde Dirichlet (establece directamente el valor de un desplazamiento en un punto o borde)
+# ----------------------------------------------------------------------------------------
 def apply_dirichlet_bc(K, f, dof, value): 
     if hasattr(K.values, "tolil"):   # Si es sparse, convertir a LIL para edición eficiente
         K.values = K.values.tolil()
@@ -15,6 +14,7 @@ def apply_dirichlet_bc(K, f, dof, value):
     f[dof] = value   # Ajustar vector de cargas
 
 # Condicion de borde Robin (resortes distribuidos tipo Winkler sobre aristas)
+# ----------------------------------------------------------------------------------------
 # En el borde: t = -k u  (la fundacion devuelve una traccion proporcional al desplazamiento)
 # Limites: k -> 0 es borde libre, k -> infinito es empotramiento (Dirichlet u = 0)
 
@@ -22,9 +22,10 @@ def robin_edge_matrix(element, edge, k_normal, k_tangential):   # Matriz local d
     nn = element.ref.number_of_nodes()
     Ke = numpy.zeros((2 * nn, 2 * nn))
 
-    s_points, s_weights = line_rule(3)
+    line = element.ref.edge_element()
+    s_points, s_weights = line.gauss_rule()
     for s, w in zip(s_points, s_weights):
-        N, dN = edge_shape(len(edge), s)
+        N, dN = line.shape(s)
 
         tangent = numpy.zeros(2)
         for k, a in enumerate(edge):
@@ -43,7 +44,7 @@ def robin_edge_matrix(element, edge, k_normal, k_tangential):   # Matriz local d
 
 def apply_robin_bc(K, elements, on_edge, k_normal, k_tangential):   # Suma los resortes a K en las aristas donde on_edge(p, q) sea verdadero
     for element in elements:
-        for edge in EDGES[element.ref.name]:
+        for edge in element.ref.edges:
             p = element.X[edge[0]]
             q = element.X[edge[1]]
 
