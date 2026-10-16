@@ -66,7 +66,7 @@ def analytic(b, c, t):
   F=0.5*rhoAgua*G*Hagua**2*THICKNESS
   M_des=F*Hagua/3
 
-  return area, W*W_w, M_est, M_des
+  return area, W + W_w, M_est, M_des
 
 
 def fem(b,c,t):
@@ -78,7 +78,7 @@ def fem(b,c,t):
 
   elements=[]
   for e in range(mesh.number_of_elements()):
-    elements.append(Solid2D(mesh.element_global_ids[e], mesh.connectivity[e]. mesh, mesh.element_material(e), THICKNESS, mesh.element_types[e], FORMULATION))
+    elements.append(Solid2D(mesh.element_global_ids[e], mesh.connectivity[e], mesh, mesh.element_material(e), THICKNESS, mesh.element_types[e], FORMULATION))
 
   K=SparseMatrix(n_dofs)
   for el in elements:
@@ -133,7 +133,7 @@ for name, b, c, t in CASES:
   e=M_reac/Ry
   rows.append((name, area, 100*(area/area0-1), FS, M_est-M_des, M_reac, e, L, sigma1, umax))
 
-print("\n%-12s %8s %7s %12s %12s %8s %10s %10s %8s" % ("Geometría", "Area", "dArea%", "FS", "Mneto an.", "Mreac FEM", "e [m]", "L/3-2L/3", "s1max", "umax"))
+print("\n%-12s %8s %8s %7s %12s %12s %8s %10s %10s %8s" % ("Geometría", "Area", "dArea%", "FS", "Mneto an.", "Mreac FEM", "e [m]", "L/3-2L/3", "s1max", "umax"))
 print("%-12s %8s %8s %7s %12s %12s %8s %10s %10s %8s" % ("", "[m2]", "", "", "[MN.m]", "[MN.m]", "", "[m]", "[MPa]", "[mm]"))
 
 for r in rows:
