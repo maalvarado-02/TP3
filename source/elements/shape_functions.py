@@ -2,7 +2,7 @@ import numpy
 
 from source.elements.quadrature import triangle_rule, quad_rule, line_rule
 
-# Armado de funciones de forma N y derivadas dN para elementos 2D en coord parametricas (xi, eta) y aristas de 2 y 3 nodos
+# Armado de funciones de forma N y derivadas dN para elementos 2D en coord parametricas (xi, eta) y aristas 1D de 2 y 3 nodos
 
 class ReferenceElement:   # Clase base para elementos de referencia 2D (triangulos y cuadrilateros)
     name = ""

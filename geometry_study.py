@@ -8,7 +8,7 @@ from source.systems.loads import assemble_body_force, assemble_pressure
 from make_dam_mesh import make_dam_mesh
 
 #estudio de variaciones de geometría de la presa. Para cada geometría, va a generar una malla, la resuelve con el modelo FEM y se compara el factor de seguridad
-al vuelco analítico con el equilibrio del FEM
+#al vuelco analítico con el equilibrio del FEM
 
 #---Datos fijos-----
 ELEMENT="Q8"
@@ -93,7 +93,7 @@ def fem(b,c,t):
   def x_face(y):
     return t*(1-y/H)
   def on_upstream_face(p,q):
-    return (abs(p[0] - x_face([p[1])) < TOL and abs(q[0] - x_face(q[1])) < TOL and p[1] <= Hagua + TOL and q[1] <= Hagua + TOL)
+    return (abs(p[0] - x_face(p[1])) < TOL and abs(q[0] - x_face(q[1])) < TOL and p[1] <= Hagua + TOL and q[1] <= Hagua + TOL)
 
   def hydrostatic_pressure(x,y):
     return rhoAgua*G*(Hagua-y)

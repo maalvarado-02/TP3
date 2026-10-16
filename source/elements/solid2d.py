@@ -90,7 +90,7 @@ class Solid2D:
         points, _ = self.ref.gauss_rule()
         return [self.stress_at(xi, eta, u) for xi, eta in points]
 
-    def average_stress(self, u):   # Tension promedio del elemento (una por celda, para graficar)
+    def average_stress(self, u):   # Tension promedio del elemento en los puntos de Gauss (para el calculo)
         stresses = self.stress_at_gauss(u)
         return sum(stresses) / len(stresses)
 

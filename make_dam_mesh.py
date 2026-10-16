@@ -103,7 +103,7 @@ def make_dam_mesh (element="Q4", nx=4, ny=8, ny_top=1, filename=None, height=HEI
         f"Cara aguas arriba en x = {upstream_batter} (en la base), base en y = 0."
     )
   write_mesh(filename, nodes, elements, element_name, header)
-  print("%s: %d nodos, %d elementos -> %s" %(element_name, len(nodes), len(elements), filename))
+  # print("%s: %d nodos, %d elementos -> %s" %(element_name, len(nodes), len(elements), filename))
   return filename
 
 # Crea todas las mallas en simultaneo (en vez de llamarlo desde dam.py)

@@ -1,7 +1,7 @@
 import numpy
 
-# Reglas de cuadratura de Gauss para la integracion numerica
-# Devuelven los puntos y pesos de Gauss en el elemento de referencia.
+# Reglas de cuadratura de Gauss para la integracion numerica (Devuelven los puntos y pesos de Gauss en el elemento de referencia)
+# Se usa la funcion numpy.polynomial.legendre.leggauss(n) que genera los puntos y pesos de la cuadratura de Gauss-Legendre de orden n en el intervalo [-1, 1]
 
 def triangle_rule(order):
     if order == 1:     # Regla de 1 punto para triángulos (orden 1)
@@ -15,7 +15,7 @@ def triangle_rule(order):
     return points, weights
 
 def quad_rule(n):  # Regla de Gauss 2D para cuadriláteros [-1, 1] x [-1, 1]
-    x, w = numpy.polynomial.legendre.leggauss(n) # Producto tensorial de la regla 1D de Gauss-Legendre.
+    x, w = numpy.polynomial.legendre.leggauss(n) # Producto tensorial de la regla 1D de Gauss-Legendre
     points = []
     weights = []
     for j in range(n):
@@ -25,4 +25,4 @@ def quad_rule(n):  # Regla de Gauss 2D para cuadriláteros [-1, 1] x [-1, 1]
     return numpy.array(points), numpy.array(weights)
 
 def line_rule(n): # Regla deGauss 1D en [-1, 1], para cargas sobre aristas.
-    return numpy.polynomial.legendre.leggauss(n)
+    return numpy.polynomial.legendre.leggauss(n)    # Funcion numpy con regla 1D de Gauss-Legendre

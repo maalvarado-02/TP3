@@ -1,7 +1,6 @@
 import numpy
 
 from source.mesh.mesh import Mesh
-from source.materials.linear_elastic import LinearElastic
 from source.elements.solid2d import Solid2D
 from source.systems.matrix import SparseMatrix
 from source.systems.loads import assemble_body_force, assemble_pressure
@@ -27,9 +26,9 @@ BASE_BC = "fixed"    # "fixed" (empotrada, Dirichlet) o "robin" (resortes de Win
 SCALE = 1000
 
 # Refinacion de la malla
-nx = 20
-ny = 40    # Hasta el nivel del agua
-ny_top = 2 # Por encima del nivel del agua
+nx = 10
+ny = 20    # Hasta el nivel del agua
+ny_top = 4 # Por encima del nivel del agua
 
 # ETAPA 1: Datos de geometria
 # ---------------------------------------------------------------
@@ -41,21 +40,13 @@ H = 30   # Altura de la presa
 b = 18   # Ancho de la base
 c = 3    # Ancho de la cresta
 d = 2    # Altura libre sobre el nivel del agua
-t = 0    # Talud (upstream_batter)
+t = 0    # Talud o inclinacion aguas arriba
 Hagua = H - d   # Nivel del agua medido desde la base
 
 TOL = 1.0e-9
 
-# ETAPA 2: Material con matriz constitutiva D - Hormigon H°21 
-# ---------------------------------------------------------------
-E = 21.0e9            # Modulo de elasticidad (Pa)
-nu = 0.2              # Coef de Poisson
-rhoHormigon = 2400  # Densidad (kg/m3)
 
-material = LinearElastic(E, nu, rhoHormigon)
-
-
-# ETAPA 3: Malla y elementos
+# ETAPA 2: Malla y elementos
 # ---------------------------------------------------------------
 mesh_file = make_dam_mesh(   # Crea la malla
     element = ELEMENT,
@@ -92,16 +83,17 @@ print("\nTipo de Formulacion: %s" % FORMULATION)
 print("Condicion de borde en la base: %s" % BASE_BC)
 
 
-# ETAPA 4: Ensamble global de K (sparse matrix)
+# ETAPA 3: Ensamble global de K (sparse matrix)
 # ---------------------------------------------------------------
 K = SparseMatrix(n_dofs)
 for el in elements:
     K.scatter_local_to_global(el)
 
 
-# ETAPA 5: Cargas (peso propio y presion hidrostatica)
+# ETAPA 4: Cargas (peso propio y presion hidrostatica)
 # ---------------------------------------------------------------
 f = numpy.zeros(n_dofs)
+rhoHormigon = elements[0].material.rho   # Densidad (kg/m3) (todos los elementos son de Hormigon H21)
 
 # Peso propio: fuerza de cuerpo x unidad de volumen b=(0, -rho.g)
 assemble_body_force(f, elements, (0.0, -rhoHormigon * G))
@@ -120,7 +112,7 @@ K0 = K.values.copy()
 f0 = f.copy()
 
 
-# ETAPA 6: Condiciones de borde en la base
+# ETAPA 5: Condiciones de borde en la base
 # ---------------------------------------------------------------
 fixed = set()
 base_nodes = [i for i in range(n_nodes) if abs(mesh.node(i).y) < TOL]   # Nodos de la base (y = 0)
@@ -147,7 +139,7 @@ else:
     raise ValueError("BASE_BC desconocida: " + BASE_BC)
 
 
-# ETAPA 7: Resolver sistema (reducido)
+# ETAPA 6: Resolver sistema (reducido)
 # ---------------------------------------------------------------
 u = solve_sparse(K, f)
 
@@ -163,7 +155,7 @@ if ev.min() <= 0:
 R = K0 @ u - f0
 
 
-# ETAPA 8: Postproceso y resultados (reacciones, tensiones, momentos, FS)
+# ETAPA 7: Postproceso y resultados (reacciones, tensiones, momentos, FS)
 # ---------------------------------------------------------------
  
 # --- Momento estabilizante -----------------------------

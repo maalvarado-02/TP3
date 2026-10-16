@@ -8,15 +8,19 @@ def apply_dirichlet_bc(K, f, dof, value):
     if hasattr(K.values, "tolil"):   # Si es sparse, convertir a LIL para edición eficiente
         K.values = K.values.tolil()
 
+    for i in range(K.number_of_dofs):
+        f[i] -= K.values[i, dof] * value
+
     K.values[dof, :] = 0.0    # Anular fila del DOF
     K.values[:, dof] = 0.0    # Anular columna del DOF
     K.values[dof, dof] = 1.0  # Poner 1 en la diagonal
     f[dof] = value   # Ajustar vector de cargas
 
+
 # Condicion de borde Robin (resortes distribuidos tipo Winkler sobre aristas)
 # ----------------------------------------------------------------------------------------
 # En el borde: t = -k u  (la fundacion devuelve una traccion proporcional al desplazamiento)
-# Limites: k -> 0 es borde libre, k -> infinito es empotramiento (Dirichlet u = 0)
+# Limites: k -> 0 es borde libre y k -> infinito es empotramiento (Dirichlet u = 0)
 
 def robin_edge_matrix(element, edge, k_normal, k_tangential):   # Matriz local de resortes de una arista
     nn = element.ref.number_of_nodes()
