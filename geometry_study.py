@@ -35,7 +35,7 @@ CASES=[
   ("Cresta 5 m", 18, 5, 0),
   ("Cresta 7 m", 18, 7, 0),
   ("Talud 3 m", 18, 3, -3),
-  ("Talud 6 m", 18, 6, -6),
+  ("Talud 6 m", 18, 3, -6),
 ]
 
 def polygon_area_centroid(points):
@@ -140,11 +140,24 @@ for r in rows:
   name, area, darea, FS, M_neto, M_reac, e, L, sigma1, umax=r
   print("%-12s %8.1f %8.1f %7.3f %12.3f %12.3f %8.2f %4.1f-%-5.1f %10.3f %8.3f" % (name, area, darea, FS, M_neto / 1e6, M_reac / 1e6, e, L / 3, 2 * L / 3,sigma1 / 1e6, 1e3 * umax))
 
-#--- Tabla con resultados en formato CSV ----
-with open("results/geometry_study.csv", "w") as file:
-    file.write("geometria,area_m2,darea_pct,FS,Mneto_MNm,Mreac_MNm,e_m,L_m,sigma1_MPa,umax_mm\n")
-    for r in rows:
-        name, area, darea, FS, M_neto, M_reac, e, L, sigma1, umax = r
-        file.write("%s,%.2f,%.2f,%.4f,%.4f,%.4f,%.3f,%.2f,%.4f,%.4f\n" % (
-            name, area, darea, FS, M_neto / 1e6, M_reac / 1e6, e, L, sigma1 / 1e6, 1e3 * umax))
-print("\nTabla guardada en results/geometry_study.csv")
+#--- Tabla con resultados ----
+import matplotlib.pyplot as plt
+headers=["Geometría", "Area\[m^2]", "ΔÁrea\n[%]", "FS", "M neto\n[MN.m]", "M reac FEM\n[MN.m]", "e\n[m]", "Tercio central\n[m]"]
+cells=[]
+for r in rows: 
+ name, area, darea, FS, M_neto, M_reac, e, L, sigma1, umax =r
+ cells.append([name, "%.1f" % area, "%.1f" % darea, "%.2f" % FS, "%.2f" % (M_neto/1e6), "%.2f" % (M_reac/1e6), "%.2f" % e, "%.1f - %.1f" % (L/3, 2*L/3)])
+
+fig, ax= plt.subplots(figsize=(11, 0.*len(rows) +1.5))
+ax.axis("off")
+table= ax.table(cellText=cells, colLabels=headers, loc="center", cellLoc="center")
+table.auto_set_font_size(False)
+table.set_fontsize(10)
+table.scale(1, 1.8)
+for j in range(len(headers)):
+ table[0,j].set_facecolor("#d9d9d9")
+ table[0,j].set_text_props(weight="bold")
+
+ax.set_title("Factor de seguridad al vuelco para distintas geometrías", fontweight="bold")
+plt.tight_layout()
+plt.show()
