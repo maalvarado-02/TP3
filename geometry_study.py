@@ -142,13 +142,13 @@ for r in rows:
 
 #--- Tabla con resultados ----
 import matplotlib.pyplot as plt
-headers=["Geometría", "Area\[m^2]", "ΔÁrea\n[%]", "FS", "M neto\n[MN.m]", "M reac FEM\n[MN.m]", "e\n[m]", "Tercio central\n[m]"]
+headers=["Geometría", "Area\n[m^2]", "ΔÁrea\n[%]", "FS", "M neto\n[MN.m]", "M reac FEM\n[MN.m]", "e\n[m]", "Tercio central\n[m]"]
 cells=[]
 for r in rows: 
  name, area, darea, FS, M_neto, M_reac, e, L, sigma1, umax =r
  cells.append([name, "%.1f" % area, "%.1f" % darea, "%.2f" % FS, "%.2f" % (M_neto/1e6), "%.2f" % (M_reac/1e6), "%.2f" % e, "%.1f - %.1f" % (L/3, 2*L/3)])
 
-fig, ax= plt.subplots(figsize=(11, 0.*len(rows) +1.5))
+fig, ax= plt.subplots(figsize=(11, 0.5*len(rows) +1.5))
 ax.axis("off")
 table= ax.table(cellText=cells, colLabels=headers, loc="center", cellLoc="center")
 table.auto_set_font_size(False)
