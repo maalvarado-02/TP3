@@ -42,6 +42,8 @@ c = 3    # Ancho de la cresta
 d = 2    # Altura libre sobre el nivel del agua
 t = 0    # Talud o inclinacion aguas arriba
 Hagua = H - d   # Nivel del agua medido desde la base
+if t !=0:
+ raise ValueError("dam.py supone cara aguas arriba vertical (t=0). Para talud usar geometry_study.py")
 
 TOL = 1.0e-9
 
