@@ -37,6 +37,7 @@ patch_test.py               patch test de los 4 elementos (σx constante)
 make_dam_mesh.py            crea las mallas de la presa para los 4 elementos
 meshes/                     mallas de entrada (patch test y presa)
 results/                    salidas para ParaView y gráficos
+geometry_study,py           estudio de variaciones de geometría y FS al vuelco
 ```
 
 ## Elementos de referencia (`shape_functions.py`)
