@@ -73,7 +73,8 @@ for node, factor in LOADS[ELEMENT].items():
 def y(node):
     return mesh.node(node - 1).y
 
-H = y(4) - y(1)
+H = y(8) - y(1)
+
 for a, b, c in [(1, 4, 7), (3, 6, 9)]:
     if abs((y(b) - y(a)) - (y(c) - y(b))) > 1e-12:
         raise ValueError("Bordes laterales deben tener nodos equiespaciados")
@@ -120,8 +121,9 @@ for el in elements:
     print("  %d     %.9e .. %.9e   %.9e .. %.9e" % (el.global_id, min(corner), max(corner), min(gauss), max(gauss)))
 
 
-sigma_exact = 2 * F / (H * THICKNESS)
-print("\nsigma_x exacta = 2F/(H t) = %.6e Pa" % sigma_exact)
+sigma_exact = 4 * F / (H * THICKNESS)
+print(F,H)
+print("\nsigma_x exacta = 4F/(H t) = %.6e Pa" % sigma_exact)
 
 TOL = 1.0e-9
 values_x = numpy.array(corner_all + gauss_all)

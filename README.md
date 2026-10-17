@@ -132,6 +132,12 @@ Parche de elementos irregulares con un nodo interno y cargas nodales equivalente
 - Reacciones esperadas en x (nodos 1 y 4): -F y -2F para T3 y Q4; -F/3 y -2F/3 para T6 y Q8
  (la carga consistente en lados cuadráticos se reparte L/6, 4L/6, L/6).
 
+## Convergencia (convergence.py)
+
+Para cada elemento resuelve mallas con nx en nx_list y ny = ny_factor * nx, e informa σ1 máx, 
+σ2 mín, |u| máx y el error relativo. Con base empotrada σ1 máx no converge (singularidad en el talón);
+σ2 mín y |u| máx sí convergen. Con Robin compara varios pares (KN, KT).
+- `solve_dam_aux()`: funciona igual que `dam.py`, pero como funcion auxiliar que se puede llamar pasandole los parametros para cada combinacion
 
 ## Etapas de `dam.py`
 

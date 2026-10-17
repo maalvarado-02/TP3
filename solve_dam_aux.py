@@ -19,7 +19,7 @@ THICKNESS=1.0
 TOL = 1e-9
 
 #Función auxiliar para análisis de convergencia. Devuelve todos los valores necesarios para comparar mallas.
-def solve_dam(element="Q4", formulation="plane_strain", base_bc="fixed", nx=10, ny=20, ny_top=4, 
+def solve_dam(element="Q4", formulation="plane_strain", base_bc="empotrado", nx=10, ny=20, ny_top=4, 
                   H=30.0, b=18.0, c=3.0, d=2.0, t=0.0, KN=1e12, KT=1e12):
     
     # --- Geometría ---
@@ -78,19 +78,37 @@ def solve_dam(element="Q4", formulation="plane_strain", base_bc="fixed", nx=10, 
 
     # --- Condiciones de borde ---
     fixed = set()
-    base_nodes = [i for i in range(n_nodes) if abs(mesh.node(i).y) < TOL]
 
-    if base_bc == "fixed":
+    def dofs(node_index):
+        return mesh.node_global_dofs(node_index)
+
+    base_nodes = [i for i in range(n_nodes) if abs(mesh.node(i).y) < TOL]   # Nodos de la base (y = 0)
+    right_node = max(base_nodes, key=lambda i: mesh.node(i).x)  # Nodo de la derecha de la base
+    
+    if base_bc == "empotrado":   # Empotrada: ux = uy = 0 en los nodos de la base
         for node in base_nodes:
-            for dof in mesh.node_global_dofs(node):
+            for dof in dofs(node):
                 fixed.add(dof)
                 apply_dirichlet_bc(K, f, dof, 0.0)
 
-    elif base_bc == "robin":
-        def on_base(p, q):
-            return abs(p[1]) < TOL and abs(q[1]) < TOL
-
-        apply_robin_bc(K, elements, on_base, KN, KT)
+    elif base_bc == "apoyado":   # Apoyado: uy = 0 en toda la base y solo el nodo derecho fija ux
+        for node in base_nodes:
+            fixed.add(dofs(node)[1])   # uy = 0 en toda la base
+        
+        fixed.add(dofs(right_node)[0])  # Nodo derecho: ux = 0
+        for dof in fixed:
+            apply_dirichlet_bc(K, f, dof, 0.0)
+        
+    elif base_bc == "robin":   # Robin: uy = 0 en toda la base y Robin en x
+        for node in base_nodes:
+            fixed.add(dofs(node)[1]) 
+        for dof in fixed:
+            apply_dirichlet_bc(K, f, dof, 0.0) # uy = 0 en toda la base
+        
+        def on_base(p, q):   # Aristas de la base (y = 0)
+                    return abs(p[1]) < TOL and abs(q[1]) < TOL
+        
+        apply_robin_bc(K, elements, on_base, KT)
 
     else:
         raise ValueError("base_bc desconocida")

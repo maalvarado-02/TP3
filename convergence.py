@@ -6,28 +6,27 @@ from solve_dam_aux import solve_dam
 
 #  Ejecuta un estudio de convergencia variando nx (ny se calcula como ny_factor * nx). Devuelve una lista de resultados y errores relativos.
 
-elements=["Q4", "T3", "T6", "Q8"]
+elements=["T3", "Q4", "T6", "Q8"]  # "T3", "Q4", "T6", "Q8"
 formulation="plane_strain"   # "plane_stress" o "plane_strain"
-base_bc="fixed"              # "fixed" (empotrada, Dirichlet) o "robin" (resortes de Winkler)
-nx_list=[5, 10, 20, 30, 40] # 5, 10, 20, 30
+base_bc = "apoyado"   # "empotrado", "apoyado" o "robin" (resortes de Winkler)
+nx_list=[5, 10, 20, 30, 40, 60] # 5, 10, 20, 30, 40, 50
 ny_factor = 2   # Para que los elementos tengan distintas proporciones (con 2 quedan parejo las dimensiones en x e y)
-robin_pairs = [
-    (1e8, 1e6),   # Base casi articulada
-    (1e10, 1e8),
-    (1e11, 1e9),
-    (1e12, 1e10),
-    (1e14, 1e12)  # Base casi empotrada
-]
+k_tang = [1e0, 1e2, 1e4]   # 1e8, 1e9, 1e10, 1e11, 1e12
 
-def run_convergence(elements=("Q4",), formulation="plane_strain", base_bc="fixed", H=30, b=18, c=3, d=2, t=0, 
-                    nx_list=(4, 8, 16, 32), ny_factor=2, robin_pairs=[(1e8, 1e6),]):
+def run_convergence(elements=("Q4",), formulation="plane_strain", base_bc="empotrado", H=30, b=18, c=3, d=2, t=0, 
+                    nx_list=(4, 8, 16, 32), ny_factor=2, k_tang = [1e8, 1e9, 1e10]):
 
     all_results = {}
     all_errors = {}
 
     # --- Ejecutar FEM para cada nivel de malla ---
     print("\n===============================================================================================================")
-    print("                          ANALISIS DE CONVERGENCIA PARA TODOS LOS ELEMENTOS")
+    if base_bc == "empotrado":
+        print("                             ANALISIS DE CONVERGENCIA (EMPOTRADO)")
+    elif base_bc == "apoyado":
+        print("                              ANALISIS DE CONVERGENCIA (APOYADO)")
+    else:
+        print("                               ANALISIS DE CONVERGENCIA (ROBIN)")
     print("===============================================================================================================")
     print("|  nx   |  ny   | nodos  || σ1_max [MPa] |   err_σ1   || σ2_min [MPa] |   err_σ2   || umax [mm]  |  err_umax  |")
     print("|-------|-------|--------||--------------|------------||--------------|------------||------------|------------|")
@@ -35,14 +34,14 @@ def run_convergence(elements=("Q4",), formulation="plane_strain", base_bc="fixed
         print(f"|---  ELEMENTO: {elem} ---")
 
         # CASO 1: BASE FIJA → convergencia normal
-        if base_bc == "fixed":
+        if base_bc in ("empotrado", "apoyado"):
             results = []
 
             for nx in nx_list:
                 ny = ny_factor * nx
                 ny_top = max(1, round(ny * d/H))
 
-                r = solve_dam(element=elem, formulation=formulation, base_bc="fixed", 
+                r = solve_dam(element=elem, formulation=formulation, base_bc=base_bc, 
                                 nx=nx, ny=ny, ny_top=ny_top, H=H, b=b, c=c, d=d, t=t)
 
                 results.append(r)
@@ -94,9 +93,9 @@ def run_convergence(elements=("Q4",), formulation="plane_strain", base_bc="fixed
 
             all_results[elem] = {}
 
-            for KN, KT in robin_pairs:
+            for KT in k_tang:
 
-                print(f"\n|---  ROBIN: KN={KN:.1e}, KT={KT:.1e}  ---")
+                print(f"|---  ROBIN: KT={KT:.1e}  ---")
 
                 results = []
 
@@ -107,12 +106,11 @@ def run_convergence(elements=("Q4",), formulation="plane_strain", base_bc="fixed
 
                     r = solve_dam(element=elem, formulation=formulation, base_bc="robin",
                                     nx=nx, ny=ny, ny_top=ny_top,
-                                    H=H, b=b, c=c, d=d, t=t,
-                                    KN=KN, KT=KT)
+                                    H=H, b=b, c=c, d=d, t=t, KT=KT)
 
                     results.append(r)
 
-                all_results[elem][(KN, KT)] = results
+                all_results[elem][KT] = results
 
                 # errores
                 errors = []
@@ -167,7 +165,7 @@ def plot_convergence(all_results, nx_list, base_bc):
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
-    plt.savefig(f"results/convergencia/conv__sigma1_{base_bc}.png", dpi=200)
+    plt.savefig(f"results/convergencia/conv_sigma1_{base_bc}.png", dpi=200)
     plt.close()
 
     # σ2_min ----------------------------
@@ -182,7 +180,7 @@ def plot_convergence(all_results, nx_list, base_bc):
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
-    plt.savefig(f"results/convergencia/conv__sigma2_{base_bc}.png", dpi=200)
+    plt.savefig(f"results/convergencia/conv_sigma2_{base_bc}.png", dpi=200)
     plt.close()
 
     # umax ----------------------------
@@ -213,10 +211,10 @@ def plot_convergence_robin(all_results, nx_list, base_bc):
         # σ1_max ----------------------------
         plt.figure(figsize=(8,5))
 
-        for (KN, KT), results in result_sets.items():
+        for KT, results in result_sets.items():
             s1_vals = [r["sigma1_max"]/1e6 for r in results]
             plt.plot(nx_list, s1_vals, marker='o',
-                     label=f"KN={KN:.1e}, KT={KT:.1e}")
+                     label=f"KT={KT:.1e}")
 
         plt.title(f"Convergencia σ1_max — {elem}")
         plt.xlabel("nx")
@@ -231,10 +229,10 @@ def plot_convergence_robin(all_results, nx_list, base_bc):
     
         plt.figure(figsize=(8,5))
 
-        for (KN, KT), results in result_sets.items():
+        for KT, results in result_sets.items():
             s2_vals = [r["sigma2_min"]/1e6 for r in results]
             plt.plot(nx_list, s2_vals, marker='o',
-                     label=f"KN={KN:.1e}, KT={KT:.1e}")
+                     label=f"KT={KT:.1e}")
 
         plt.title(f"Convergencia σ2_min — {elem}")
         plt.xlabel("nx")
@@ -251,8 +249,9 @@ results, errors = run_convergence(elements=elements,
                                   formulation=formulation,
                                   base_bc=base_bc, 
                                   nx_list=nx_list,
-                                  robin_pairs=robin_pairs)
-if base_bc == "fixed":
+                                  k_tang=k_tang)
+
+if base_bc in ("empotrado", "apoyado"):
     plot_convergence(results, nx_list, base_bc)
 else: 
     plot_convergence_robin(results, nx_list, base_bc)

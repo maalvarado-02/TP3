@@ -2,7 +2,7 @@
 # Dominio [0,2] x [0,2]. Nodos de los bordes izq. y der. equiespaciados
 # y los nodos centrales fuera de posicion regular.
 #
-# Condiciones sugeridas (F = sigma*H*t/2, H = 1  ->  sigma_x exacta = 2F/(H t)):
+# Condiciones sugeridas (F = sigma*H*t/4, H = 2  ->  sigma_x exacta = 4F/(H t)):
 #   nodo 1: ux = uy = 0        nodo 4: ux = 0 (rodillo)
 #   fuerzas en x (cargas nodales consistentes):
 #     nodo  3: 1 F

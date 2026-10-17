@@ -1,4 +1,5 @@
 import numpy
+from scipy.sparse.linalg import eigsh
 
 from source.mesh.mesh import Mesh
 from source.elements.solid2d import Solid2D
@@ -17,7 +18,7 @@ ELEMENT = "Q4"          # "Q4", "T3", "T6" o "Q8"
 FORMULATION = "plane_strain"     # "plane_stress" o "plane_strain"
 
 # --- Condicion de borde en la base --------------------------------------
-BASE_BC = "fixed"    # "fixed" (empotrada, Dirichlet) o "robin" (resortes de Winkler)
+BASE_BC = "robin"   # "empotrado", "apoyado" o "robin" (resortes de Winkler)
 
 # --- Factor de escala de la deformada para ParaView/graficos -------------
  # scale = 0 (geometría original sin deformación)
@@ -26,8 +27,8 @@ BASE_BC = "fixed"    # "fixed" (empotrada, Dirichlet) o "robin" (resortes de Win
 SCALE = 1000
 
 # Refinacion de la malla
-nx = 10
-ny = 20    # Hasta el nivel del agua
+nx = 20
+ny = 40    # Hasta el nivel del agua
 ny_top = 4 # Por encima del nivel del agua
 
 # ETAPA 1: Datos de geometria
@@ -115,26 +116,46 @@ f0 = f.copy()
 # ETAPA 5: Condiciones de borde en la base
 # ---------------------------------------------------------------
 fixed = set()
+
+def dofs(node_index):
+    return mesh.node_global_dofs(node_index)
+
 base_nodes = [i for i in range(n_nodes) if abs(mesh.node(i).y) < TOL]   # Nodos de la base (y = 0)
+right_node = max(base_nodes, key=lambda i: mesh.node(i).x)  # Nodo de la derecha de la base
 
-# Rigidez asociada al piso para CB Robin (si los valores de K son chicos reducir SCALE)
-KN = 1.0e12         # Rigidez normal de la fundacion (Pa/m)
-KT = 1.0e12         # Rigidez tangencial de la fundacion (Pa/m)
+KT = 1.0e9        # Rigidez asociada al piso tangencial (x) de la fundacion (CB Robin) (Pa/m)
 
-if BASE_BC == "fixed":      # Empotrada: u = 0 en los nodos de la base
+if BASE_BC == "empotrado":   # Empotrada: ux = uy = 0 en los nodos de la base
     for node in base_nodes:
-        for dof in mesh.node_global_dofs(node):
+        for dof in dofs(node):
             fixed.add(dof)
             apply_dirichlet_bc(K, f, dof, 0.0)
+    
     K_check = K0
 
-elif BASE_BC == "robin":    # Robin: resortes sobre las aristas de la base, no se fija ningun GDL
-    def on_base(p, q):   # Aristas de la base (y = 0)
-        return abs(p[1]) < TOL and abs(q[1]) < TOL
+elif BASE_BC == "apoyado":   # Apoyado: uy = 0 en toda la base y solo el nodo derecho fija ux
+    for node in base_nodes:
+        fixed.add(dofs(node)[1])   # uy = 0 en toda la base
     
-    apply_robin_bc(K, elements, on_base, KN, KT)
+    fixed.add(dofs(right_node)[0])  # Nodo derecho: ux = 0
+    for dof in fixed:
+        apply_dirichlet_bc(K, f, dof, 0.0)
+    
+    K_check = K0
+
+elif BASE_BC == "robin":   # Robin: uy = 0 en toda la base y Robin en x
+    for node in base_nodes:
+        fixed.add(dofs(node)[1]) 
+    for dof in fixed:
+        apply_dirichlet_bc(K, f, dof, 0.0) # uy = 0 en toda la base
+    
+    def on_base(p, q):   # Aristas de la base (y = 0)
+                return abs(p[1]) < TOL and abs(q[1]) < TOL
+    
+    apply_robin_bc(K, elements, on_base, KT)
+    
     K_check = K.values.copy()   # K con resortes (K0 queda sin resortes: R = K0 u - f0 = -Ks u)
- 
+
 else:
     raise ValueError("BASE_BC desconocida: " + BASE_BC)
 
@@ -145,10 +166,16 @@ u = solve_sparse(K, f)
 
 # --- Autovalores de K reducida (chequeo de estabilidad) ------------------
 free = [d for d in range(n_dofs) if d not in fixed]
-K_free = K_check[numpy.ix_(free, free)].toarray()
-ev = numpy.linalg.eigvalsh(K_free)
-print("\nAutovalor minimo/maximo de K reducida: %.2e (debe ser > 0)" % (ev.min() / ev.max()))
-if ev.min() <= 0:
+K_free = K_check.tocsr()[free][:, free].tocsc()
+
+lmax = eigsh(K_free, k=1, which="LA", return_eigenvectors=False)[0]
+try:
+    lmin = eigsh(K_free, k=1, sigma=0, which="LM", return_eigenvectors=False)[0] # shift-invert: busca el autovalor más cercano a 0 con una factorización sparse
+except RuntimeError:
+    lmin = 0.0   # K singular (modos de cuerpo rígido): la factorización falla
+
+print("\nAutovalor minimo/maximo de K reducida: %.2e (debe ser > 0)" % (lmin / lmax))
+if lmin <= 0:
     print("Advertencia: matriz K reducida no es definida positiva")
 
 # --- Reacciones en la base: R = K0 u - f0 -------------------------------------------
